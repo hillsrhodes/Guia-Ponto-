@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      try {
+        window.addEventListener('error', function(e) {
+          if (e && (String(e.filename).includes('chrome-extension://') || String(e.message).includes('Cannot set property fetch'))) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+          if (e && (String(e.reason).includes('chrome-extension://') || String(e.reason).includes('Cannot set property fetch'))) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }, true);
+        var _f = window.fetch;
+        Object.defineProperty(window, 'fetch', {
+          get: function() { return _f; },
+          set: function(v) { if (typeof v === 'function') { _f = v; } },
+          configurable: true,
+          enumerable: true
+        });
+      } catch (err) {}
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GuiaPonto — Sua empresa merece ser encontrada</title>
+    <meta name="description" content="O guia digital que aproxima negócios locais de pessoas que estão procurando exatamente o que você oferece. Cadastre seu negócio grátis!" />
+    <meta property="og:title" content="GuiaPonto — Sua empresa merece ser encontrada" />
+    <meta property="og:description" content="O guia digital que aproxima negócios locais de pessoas que estão procurando exatamente o que você oferece. Cadastre seu negócio grátis!" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

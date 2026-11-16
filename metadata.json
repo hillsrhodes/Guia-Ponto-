@@ -1,0 +1,6 @@
+{
+  "name": "GuiaPonto",
+  "description": "Diretório de negócios locais e vitrine digital. Sua empresa merece ser encontrada.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
