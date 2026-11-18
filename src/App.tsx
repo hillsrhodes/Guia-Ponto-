@@ -16,6 +16,7 @@ import { FeaturedBusinesses } from './components/sections/FeaturedBusinesses';
 import { MobileAdMockupSection } from './components/sections/MobileAdMockupSection';
 import { PricingSection } from './components/sections/PricingSection';
 import { TestimonialsGoogleSection } from './components/sections/TestimonialsGoogleSection';
+import { BusinessInsightsSection } from './components/sections/BusinessInsightsSection';
 import { FAQSection } from './components/sections/FAQSection';
 import { CTAFinal } from './components/sections/CTAFinal';
 import { Footer } from './components/sections/Footer';
@@ -24,7 +25,7 @@ import { LoginModal } from './components/ui/LoginModal';
 import { WhatsAppModal } from './components/ui/WhatsAppModal';
 import { FloatingWhatsAppButton } from './components/ui/FloatingWhatsAppButton';
 import { SimulatedEmailNotificationToast } from './components/ui/SimulatedEmailNotificationToast';
-import { StripeCheckoutModal } from './components/ui/StripeCheckoutModal';
+import { MercadoPagoCheckoutModal } from './components/ui/MercadoPagoCheckoutModal';
 import { notifyOwnerOnWhatsAppButtonClick } from './services/notificationService';
 import { CacildaAICreatorModal } from './components/dashboard/CacildaAICreatorModal';
 import { UserDashboard } from './components/dashboard/UserDashboard';
@@ -33,6 +34,7 @@ import { MasterAdminPanelSPA } from './components/dashboard/MasterAdminPanelSPA'
 import { BusinessDirectoryPage, DIRECTORY_MOCK_DATA, DirectoryBusiness } from './components/directory/BusinessDirectoryPage';
 import { BusinessLandingPage } from './components/directory/BusinessLandingPage';
 import { CookieConsentBanner, LegalCenterModal, LegalTabType } from './components/legal/LegalComplianceHub';
+import { ContributorProfileModal } from './components/contributor/ContributorProfileModal';
 
 export default function App() {
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
@@ -45,8 +47,9 @@ export default function App() {
   const [activeWhatsAppBusiness, setActiveWhatsAppBusiness] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'business' | 'consumer'>('business');
   const [legalModalTab, setLegalModalTab] = useState<LegalTabType | null>(null);
-  const [stripeModalOpen, setStripeModalOpen] = useState<boolean>(false);
-  const [stripePlanId, setStripePlanId] = useState<'premium' | 'enterprise'>('premium');
+  const [mercadoPagoModalOpen, setMercadoPagoModalOpen] = useState<boolean>(false);
+  const [mercadoPagoPlanId, setMercadoPagoPlanId] = useState<'premium' | 'enterprise'>('premium');
+  const [contributorProfileOpen, setContributorProfileOpen] = useState<boolean>(false);
   
   // Directory & Individual Business Landing Page View States
   const [currentView, setCurrentView] = useState<'home' | 'directory' | 'business-landing'>('home');
@@ -110,13 +113,13 @@ export default function App() {
 
   const handleSelectPlan = (planName: string) => {
     if (planName.toLowerCase().includes('enterprise')) {
-      setStripePlanId('enterprise');
-      setStripeModalOpen(true);
+      setMercadoPagoPlanId('enterprise');
+      setMercadoPagoModalOpen(true);
       return;
     }
     if (planName.toLowerCase().includes('premium') || planName.toLowerCase().includes('pro')) {
-      setStripePlanId('premium');
-      setStripeModalOpen(true);
+      setMercadoPagoPlanId('premium');
+      setMercadoPagoModalOpen(true);
       return;
     }
     setRegisterModalOpen(true);
@@ -177,6 +180,7 @@ export default function App() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onContactWhatsApp={(biz) => handleTriggerWhatsAppContact(biz)}
+          onOpenContributorProfile={() => setContributorProfileOpen(true)}
         />
 
         <Footer
@@ -188,6 +192,12 @@ export default function App() {
         <WhatsAppModal
           businessName={activeWhatsAppBusiness}
           onClose={() => setActiveWhatsAppBusiness(null)}
+        />
+
+        <ContributorProfileModal
+          isOpen={contributorProfileOpen}
+          onClose={() => setContributorProfileOpen(false)}
+          onExploreDirectoryToReview={() => handleOpenDirectory()}
         />
 
         <SimulatedEmailNotificationToast />
@@ -216,6 +226,7 @@ export default function App() {
           onOpenExecutiveDashboard={() => setExecutiveDashboardOpen(true)}
           onContactWhatsApp={(biz) => handleTriggerWhatsAppContact(biz)}
           onOpenBusinessLanding={handleOpenBusinessLanding}
+          onOpenContributorProfile={() => setContributorProfileOpen(true)}
           initialCategory={directoryInitialCategory}
           initialSearch={directoryInitialSearch}
           initialRadius={directoryInitialRadius}
@@ -264,6 +275,16 @@ export default function App() {
             setLoginModalOpen(false);
             setMasterAdminOpen(true);
           }}
+          onLoginContributor={() => {
+            setLoginModalOpen(false);
+            setContributorProfileOpen(true);
+          }}
+        />
+
+        <ContributorProfileModal
+          isOpen={contributorProfileOpen}
+          onClose={() => setContributorProfileOpen(false)}
+          onExploreDirectoryToReview={() => handleOpenDirectory()}
         />
 
         <CookieConsentBanner onOpenLegalModal={(tab) => setLegalModalTab(tab)} />
@@ -301,6 +322,7 @@ export default function App() {
           onOpenDirectory={(search) => handleOpenDirectory('Todos', search)}
           onSelectCategory={(category) => handleOpenDirectory(category, '')}
           onSelectBusiness={(business) => handleOpenBusinessLanding(business)}
+          onOpenContributorProfile={() => setContributorProfileOpen(true)}
           activeTab={activeTab}
         />
 
@@ -334,6 +356,9 @@ export default function App() {
 
         {/* Google Style Testimonials Section */}
         <TestimonialsGoogleSection />
+
+        {/* Business Insights Editorial Hub (Marketing, Local SEO & Digital Growth) */}
+        <BusinessInsightsSection onOpenRegisterModal={() => setRegisterModalOpen(true)} />
 
         {/* FAQ / Objection Handling */}
         <FAQSection />
@@ -390,6 +415,17 @@ export default function App() {
           setLoginModalOpen(false);
           setMasterAdminOpen(true);
         }}
+        onLoginContributor={() => {
+          setLoginModalOpen(false);
+          setContributorProfileOpen(true);
+        }}
+      />
+
+      {/* Contribuidor GuiaPonto Profile (Badges & Levels) */}
+      <ContributorProfileModal
+        isOpen={contributorProfileOpen}
+        onClose={() => setContributorProfileOpen(false)}
+        onExploreDirectoryToReview={() => handleOpenDirectory()}
       />
 
       {/* WhatsApp Modal */}
@@ -398,11 +434,11 @@ export default function App() {
         onClose={() => setActiveWhatsAppBusiness(null)}
       />
 
-      {/* Stripe Checkout Modal */}
-      <StripeCheckoutModal
-        isOpen={stripeModalOpen}
-        onClose={() => setStripeModalOpen(false)}
-        initialPlanId={stripePlanId}
+      {/* Mercado Pago Checkout Modal */}
+      <MercadoPagoCheckoutModal
+        isOpen={mercadoPagoModalOpen}
+        onClose={() => setMercadoPagoModalOpen(false)}
+        initialPlanId={mercadoPagoPlanId}
       />
 
       <SimulatedEmailNotificationToast />

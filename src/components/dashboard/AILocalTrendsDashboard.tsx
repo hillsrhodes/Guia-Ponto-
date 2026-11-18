@@ -247,9 +247,9 @@ function buildFallbackLocalTrends(
         id: 'opp-2',
         title: 'Captura de Demanda Corporativa B2B na Zona Sul de Sorocaba',
         summary:
-          'Empresas e escritórios na Av. Antônio Carlos Comitre aumentaram em 54% as buscas por pacotes corporativos e atendimento prioritário.',
+          'Negócios e escritórios na Av. Antônio Carlos Comitre aumentaram em 54% as buscas por pacotes corporativos e atendimento prioritário.',
         recommendedAction:
-          'Adicionar pacote executivo para grupos/empresas na vitrine pública com cupom corporativo exclusivo.',
+          'Adicionar pacote executivo para grupos/negócios na vitrine pública com cupom corporativo exclusivo.',
         estimatedMonthlyLeads: '+45 a +65 Leads/mês',
         targetZone: 'Corredor Comitre & Campolim',
         priority: 'Alta Prioridade'
@@ -453,7 +453,7 @@ export function AILocalTrendsDashboard({
         {/* Quick Preset Business Buttons for Sorocaba */}
         <div className="space-y-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-            Empresas Monitoradas em Sorocaba (Clique para Alternar Análise):
+            Negócios Monitorados em Sorocaba (Clique para Alternar Análise):
           </span>
           <div className="flex flex-wrap items-center gap-2">
             {PRESET_SOROCABA_BUSINESSES.map((preset) => (

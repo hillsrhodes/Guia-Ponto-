@@ -12,7 +12,7 @@ export function StatsBanner() {
       icon: Building2,
       value: '2.500+',
       label: 'Negócios Cadastrados',
-      description: 'Empresas ativas gerando oportunidades diárias.',
+      description: 'Negócios ativos gerando oportunidades diárias.',
       color: 'from-[#FE3A18] to-rose-600',
     },
     {
@@ -33,7 +33,7 @@ export function StatsBanner() {
       icon: TrendingUp,
       value: '94%',
       label: 'Satisfação dos Clientes',
-      description: 'Empresas que relatam aumento nos contatos.',
+      description: 'Negócios que relatam aumento nos contatos.',
       color: 'from-emerald-500 to-teal-500',
     },
   ];
@@ -53,7 +53,7 @@ export function StatsBanner() {
             Negócios locais merecem ser vistos.
           </h2>
           <p className="text-slate-400 mt-2 text-sm sm:text-base">
-            Indicadores atualizados e reais de empresas que já transformaram sua presença digital com o GuiaPonto.
+            Indicadores atualizados e reais de negócios que já transformaram sua presença digital com o GuiaPonto.
           </p>
         </div>
 

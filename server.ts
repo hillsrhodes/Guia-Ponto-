@@ -3,8 +3,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI, Type } from '@google/genai';
-import Stripe from 'stripe';
+import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,18 +22,6 @@ function getGenAIClient(): GoogleGenAI | null {
       },
     },
   });
-}
-
-function getStripeClient(): Stripe | null {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (
-    !secretKey ||
-    secretKey === 'sk_test_your_stripe_secret_key' ||
-    !secretKey.startsWith('sk_')
-  ) {
-    return null;
-  }
-  return new Stripe(secretKey);
 }
 
 function getMercadoPagoClient(): MercadoPagoConfig | null {
@@ -188,6 +175,170 @@ Gere dados analíticos realistas para o mercado de Sorocaba (bairros como Parque
     }
   });
 
+  // Dedicated AI Smart Category Suggestion endpoint for Business Registration Form
+  const DEFAULT_BUSINESS_CATEGORIES = [
+    'Restaurantes & Gastronomia',
+    'Oficinas & Centros Automotivos',
+    'Clínicas & Saúde',
+    'Salões de Beleza & Barbearias',
+    'Imobiliárias & Construção',
+    'Pet Shops & Veterinárias',
+    'Moda, Calçados & Varejo',
+    'Academias & Esportes',
+    'Serviços Profissionais & B2B',
+    'Educação & Cursos',
+  ];
+
+  app.post('/api/gemini/suggest-categories', async (req, res) => {
+    try {
+      const {
+        businessName = '',
+        description = '',
+        categories = DEFAULT_BUSINESS_CATEGORIES,
+      } = req.body || {};
+
+      const cleanDescription = String(description || '').trim();
+      const cleanName = String(businessName || '').trim();
+
+      if (cleanDescription.length < 8) {
+        res.status(400).json({
+          error:
+            'Escreva uma descrição com pelo menos 8 caracteres para a IA sugerir a categoria ideal.',
+        });
+        return;
+      }
+
+      const ai = getGenAIClient();
+      if (!ai) {
+        res.status(503).json({
+          error:
+            'GEMINI_API_KEY não configurada no servidor. Verifique Settings > Secrets ou selecione a categoria manualmente.',
+        });
+        return;
+      }
+
+      const allowedCategories: string[] =
+        Array.isArray(categories) && categories.length > 0
+          ? categories.filter(
+              (c): c is string => typeof c === 'string' && c.trim().length > 0
+            )
+          : DEFAULT_BUSINESS_CATEGORIES;
+
+      const prompt = `Você é um classificador especialista de diretórios de negócios locais (GuiaPonto).
+Analise os dados do negócio abaixo e escolha a categoria principal MAIS PRECISA exclusivamente dentre as categorias permitidas listadas.
+
+Categorias permitidas:
+${allowedCategories.map((c, idx) => `${idx + 1}. ${c}`).join('\n')}
+
+Dados do negócio:
+- Nome Fantasia: ${cleanName || 'Não informado'}
+- Descrição dos serviços e diferenciais: "${cleanDescription}"
+
+Retorne JSON estruturado com:
+- primaryCategory: exatamente o nome de uma das categorias permitidas acima;
+- secondaryCategories: até 2 categorias alternativas da lista permitida (diferentes da primaryCategory) caso o negócio atenda segmentos próximos;
+- confidenceLabel: "Alta" se a descrição deixa o segmento evidente, ou "Média" se houver mais de uma interpretação possível;
+- reasoning: justificativa objetiva em 1 frase curta em português do Brasil explicando a escolha com base na descrição;
+- suggestedTags: até 4 termos de busca locais curtos relevantes para esse negócio.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-4-hydrogen',
+        contents: prompt,
+        config: {
+          systemInstruction:
+            'Você classifica negócios locais brasileiros nas categorias oficiais do GuiaPonto. Sempre retorne nomes exatos das categorias permitidas em português do Brasil.',
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              primaryCategory: { type: Type.STRING },
+              secondaryCategories: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              confidenceLabel: { type: Type.STRING },
+              reasoning: { type: Type.STRING },
+              suggestedTags: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+            },
+            required: [
+              'primaryCategory',
+              'secondaryCategories',
+              'confidenceLabel',
+              'reasoning',
+              'suggestedTags',
+            ],
+          },
+        },
+      });
+
+      const rawText = (response.text ?? '{}').trim();
+      const parsed = JSON.parse(rawText);
+
+      const normalizeMatch = (candidate: unknown): string | null => {
+        if (typeof candidate !== 'string') return null;
+        const trimmed = candidate.trim().toLowerCase();
+        const exact = allowedCategories.find((c) => c.toLowerCase() === trimmed);
+        if (exact) return exact;
+        const partial = allowedCategories.find(
+          (c) =>
+            c.toLowerCase().includes(trimmed) ||
+            trimmed.includes(c.toLowerCase())
+        );
+        return partial || null;
+      };
+
+      const primaryCategory =
+        normalizeMatch(parsed.primaryCategory) || allowedCategories[0];
+
+      const secondaryCategories = Array.isArray(parsed.secondaryCategories)
+        ? parsed.secondaryCategories
+            .map((c: unknown) => normalizeMatch(c))
+            .filter(
+              (c: string | null): c is string =>
+                Boolean(c) && c !== primaryCategory
+            )
+            .slice(0, 2)
+        : [];
+
+      const confidenceLabel =
+        parsed.confidenceLabel === 'Média' ? 'Média' : 'Alta';
+
+      const reasoning =
+        typeof parsed.reasoning === 'string' && parsed.reasoning.trim()
+          ? parsed.reasoning.trim()
+          : `Categoria identificada com base nos serviços descritos para ${cleanName || 'o negócio'}.`;
+
+      const suggestedTags = Array.isArray(parsed.suggestedTags)
+        ? parsed.suggestedTags
+            .filter(
+              (t: unknown): t is string =>
+                typeof t === 'string' && t.trim().length > 0
+            )
+            .map((t: string) => t.trim())
+            .slice(0, 4)
+        : [];
+
+      res.json({
+        primaryCategory,
+        secondaryCategories,
+        confidenceLabel,
+        reasoning,
+        suggestedTags,
+      });
+    } catch (error: any) {
+      console.error('Erro em /api/gemini/suggest-categories:', error);
+      res.status(500).json({
+        error:
+          error?.message ||
+          'Não foi possível classificar automaticamente com a API do Gemini.',
+      });
+    }
+  });
+
   // In-memory store for merchant lead email notifications
   interface DispatchedOwnerEmail {
     id: string;
@@ -308,126 +459,15 @@ ${couponUsed ? `• Cupom Aplicado: ${couponUsed}\n` : ''}• Mensagem: "${messa
   });
 
   // =========================================================================
-  // STRIPE PAYMENT GATEWAY (Stripe Brasil: Card, PIX & Boleto + Webhooks)
+  // MERCADO PAGO GATEWAY (Checkout Pro & Transparente: PIX, Cartão, Saldo MP & Boleto)
   // =========================================================================
-  interface StripeGatewayTransaction {
-    id: string;
-    sessionId: string;
-    paymentIntentId: string;
-    businessName: string;
-    customerName: string;
-    customerEmail: string;
-    cnpj?: string;
-    planId: 'premium' | 'enterprise';
-    planName: 'Plano Premium Pro' | 'Enterprise Regional';
-    billingCycle: 'annual' | 'monthly';
-    paymentMethod: 'card' | 'pix' | 'boleto';
-    amountBrl: number;
-    monthlyEquivalentBrl: number;
-    discountAppliedPct: number;
-    couponCode?: string;
-    status: 'succeeded' | 'trialing_7d' | 'awaiting_pix' | 'processing';
-    receiptNumber: string;
-    createdAt: string;
-  }
-
-  interface StripeWebhookEventRecord {
-    id: string;
-    type:
-      | 'checkout.session.completed'
-      | 'invoice.payment_succeeded'
-      | 'customer.subscription.created'
-      | 'payment_intent.succeeded';
-    sessionId: string;
-    businessName: string;
-    planName: string;
-    amountBrl: number;
-    paymentMethod: string;
-    httpStatus: 200;
-    receivedAt: string;
-  }
-
-  const stripeTransactions: StripeGatewayTransaction[] = [
-    {
-      id: 'tx-seed-1',
-      sessionId: 'cs_live_a1B2c3D4e5F6g7H8i9J0',
-      paymentIntentId: 'pi_3Q9xLm2eZvKYlo2C0841',
-      businessName: 'Restaurante Sabor & Fogo Co.',
-      customerName: 'Alexandre Santos',
-      customerEmail: 'alexandre@guiaponto.com',
-      cnpj: '42.819.301/0001-88',
-      planId: 'premium',
-      planName: 'Plano Premium Pro',
-      billingCycle: 'annual',
-      paymentMethod: 'pix',
-      amountBrl: 297.0,
-      monthlyEquivalentBrl: 24.75,
-      discountAppliedPct: 50,
-      status: 'succeeded',
-      receiptNumber: '2849-9012',
-      createdAt: 'Hoje às 09:40',
-    },
-    {
-      id: 'tx-seed-2',
-      sessionId: 'cs_live_k9L8m7N6o5P4q3R2s1T0',
-      paymentIntentId: 'pi_3Q9wKp2eZvKYlo2C0192',
-      businessName: 'Residencial Sênior Acolher',
-      customerName: 'Dra. Helena Vasconcelos',
-      customerEmail: 'diretoria@residencialacolher.com.br',
-      cnpj: '19.402.118/0001-40',
-      planId: 'enterprise',
-      planName: 'Enterprise Regional',
-      billingCycle: 'annual',
-      paymentMethod: 'card',
-      amountBrl: 1788.0,
-      monthlyEquivalentBrl: 149.0,
-      discountAppliedPct: 25,
-      status: 'succeeded',
-      receiptNumber: '2849-8874',
-      createdAt: 'Ontem às 16:15',
-    },
-  ];
-
-  const stripeWebhookEvents: StripeWebhookEventRecord[] = [
-    {
-      id: 'evt_3Q9xLm2eZvKYlo2C_01',
-      type: 'checkout.session.completed',
-      sessionId: 'cs_live_a1B2c3D4e5F6g7H8i9J0',
-      businessName: 'Restaurante Sabor & Fogo Co.',
-      planName: 'Plano Premium Pro (Anual)',
-      amountBrl: 297.0,
-      paymentMethod: 'PIX Instantâneo',
-      httpStatus: 200,
-      receivedAt: 'Hoje às 09:40:12',
-    },
-    {
-      id: 'evt_3Q9wKp2eZvKYlo2C_02',
-      type: 'invoice.payment_succeeded',
-      sessionId: 'cs_live_k9L8m7N6o5P4q3R2s1T0',
-      businessName: 'Residencial Sênior Acolher',
-      planName: 'Enterprise Regional (Anual)',
-      amountBrl: 1788.0,
-      paymentMethod: 'Cartão de Crédito',
-      httpStatus: 200,
-      receivedAt: 'Ontem às 16:15:04',
-    },
-  ];
-
-  const STRIPE_PLAN_CATALOG = {
+  const MERCADOPAGO_PLAN_CATALOG = {
     premium: {
       name: 'Plano Premium Pro',
       monthlyAmountBrl: 49.9,
       annualAmountBrl: 297.0,
       annualMonthlyEquivalentBrl: 24.75,
       trialDays: 7,
-      priceIds: {
-        monthly:
-          process.env.STRIPE_PRICE_PREMIUM_MONTHLY ||
-          'price_guiaponto_premium_monthly_brl',
-        annual:
-          process.env.STRIPE_PRICE_PREMIUM_ANNUAL ||
-          'price_guiaponto_premium_annual_brl',
-      },
     },
     enterprise: {
       name: 'Enterprise Regional',
@@ -435,290 +475,8 @@ ${couponUsed ? `• Cupom Aplicado: ${couponUsed}\n` : ''}• Mensagem: "${messa
       annualAmountBrl: 1788.0,
       annualMonthlyEquivalentBrl: 149.0,
       trialDays: 7,
-      priceIds: {
-        monthly:
-          process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY ||
-          'price_guiaponto_enterprise_monthly_brl',
-        annual:
-          process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL ||
-          'price_guiaponto_enterprise_annual_brl',
-      },
     },
   };
-
-  app.get('/api/stripe/config', (_req, res) => {
-    const stripe = getStripeClient();
-    res.json({
-      gatewayActive: true,
-      mode: stripe ? 'live_api' : 'sandbox_ready',
-      sdkVersion: 'stripe-node v22 (API 2025-02-24.acacia)',
-      region: 'BR (Sorocaba / São Paulo)',
-      currency: 'BRL',
-      supportedMethods: ['card', 'pix', 'boleto'],
-      webhookEndpoint: '/api/stripe/webhook',
-      plans: STRIPE_PLAN_CATALOG,
-      transactions: stripeTransactions,
-      webhookEvents: stripeWebhookEvents,
-    });
-  });
-
-  app.post('/api/stripe/create-checkout-session', async (req, res) => {
-    try {
-      const {
-        planId = 'premium',
-        billingCycle = 'annual',
-        paymentMethod = 'pix',
-        customerName = 'Alexandre Santos',
-        customerEmail = 'alexandre@guiaponto.com',
-        businessName = 'Restaurante Sabor & Fogo Co.',
-        cnpj = '42.819.301/0001-88',
-        couponCode = '',
-      } = req.body || {};
-
-      const selectedPlan =
-        planId === 'enterprise'
-          ? STRIPE_PLAN_CATALOG.enterprise
-          : STRIPE_PLAN_CATALOG.premium;
-
-      const baseAmount =
-        billingCycle === 'annual'
-          ? selectedPlan.annualAmountBrl
-          : selectedPlan.monthlyAmountBrl;
-
-      const normalizedCoupon = String(couponCode || '')
-        .trim()
-        .toUpperCase();
-      let extraDiscountPct = 0;
-      if (normalizedCoupon === 'SOROCABA50' || normalizedCoupon === 'PRO50') {
-        extraDiscountPct = 15;
-      } else if (
-        normalizedCoupon === 'CAMPOLIM20' ||
-        normalizedCoupon === 'SOROCABA15'
-      ) {
-        extraDiscountPct = 10;
-      }
-
-      const finalAmountBrl = Number(
-        (baseAmount * (1 - extraDiscountPct / 100)).toFixed(2)
-      );
-      const monthlyEquivalentBrl =
-        billingCycle === 'annual'
-          ? Number((finalAmountBrl / 12).toFixed(2))
-          : finalAmountBrl;
-
-      const now = new Date();
-      const timeFormatted = now.toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-
-      const stripe = getStripeClient();
-      let liveCheckoutUrl: string | null = null;
-      let sessionId = `cs_br_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2, 8)}`;
-      const paymentIntentId = `pi_3Q${Math.random()
-        .toString(36)
-        .slice(2, 12)
-        .toUpperCase()}`;
-
-      if (stripe) {
-        try {
-          const appUrl =
-            process.env.APP_URL && process.env.APP_URL !== 'MY_APP_URL'
-              ? process.env.APP_URL
-              : 'http://localhost:3000';
-
-          const session = await stripe.checkout.sessions.create({
-            mode: 'subscription',
-            customer_email: customerEmail,
-            line_items: [
-              {
-                price_data: {
-                  currency: 'brl',
-                  product_data: {
-                    name: `${selectedPlan.name} - GuiaPonto Sorocaba (${
-                      billingCycle === 'annual' ? 'Ciclo Anual' : 'Ciclo Mensal'
-                    })`,
-                    description: `Assinatura comercial para ${businessName}`,
-                  },
-                  unit_amount: Math.round(finalAmountBrl * 100),
-                  recurring: {
-                    interval: billingCycle === 'annual' ? 'year' : 'month',
-                  },
-                },
-                quantity: 1,
-              },
-            ],
-            subscription_data: {
-              trial_period_days: selectedPlan.trialDays,
-              metadata: {
-                businessName,
-                cnpj,
-                planId,
-              },
-            },
-            success_url: `${appUrl}/?stripe_status=success&session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${appUrl}/?stripe_status=cancelled`,
-          });
-
-          sessionId = session.id;
-          liveCheckoutUrl = session.url;
-        } catch (stripeErr) {
-          console.warn(
-            'Stripe SDK live session fallback activated:',
-            stripeErr
-          );
-        }
-      }
-
-      const transaction: StripeGatewayTransaction = {
-        id: `tx-${Date.now()}`,
-        sessionId,
-        paymentIntentId,
-        businessName,
-        customerName,
-        customerEmail,
-        cnpj,
-        planId: planId === 'enterprise' ? 'enterprise' : 'premium',
-        planName: selectedPlan.name as
-          | 'Plano Premium Pro'
-          | 'Enterprise Regional',
-        billingCycle: billingCycle === 'monthly' ? 'monthly' : 'annual',
-        paymentMethod:
-          paymentMethod === 'pix' || paymentMethod === 'boleto'
-            ? paymentMethod
-            : 'card',
-        amountBrl: finalAmountBrl,
-        monthlyEquivalentBrl,
-        discountAppliedPct:
-          (billingCycle === 'annual' ? 50 : 0) + extraDiscountPct,
-        couponCode: normalizedCoupon || undefined,
-        status: 'succeeded',
-        receiptNumber: `${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(
-          1000 + Math.random() * 9000
-        )}`,
-        createdAt: `Agora (${timeFormatted})`,
-      };
-
-      stripeTransactions.unshift(transaction);
-      if (stripeTransactions.length > 40) stripeTransactions.pop();
-
-      const webhookEvt: StripeWebhookEventRecord = {
-        id: `evt_${Date.now()}`,
-        type: 'checkout.session.completed',
-        sessionId,
-        businessName,
-        planName: `${selectedPlan.name} (${
-          billingCycle === 'annual' ? 'Anual' : 'Mensal'
-        })`,
-        amountBrl: finalAmountBrl,
-        paymentMethod:
-          paymentMethod === 'pix'
-            ? 'PIX Instantâneo'
-            : paymentMethod === 'boleto'
-            ? 'Boleto B2B'
-            : 'Cartão de Crédito',
-        httpStatus: 200,
-        receivedAt: `Hoje às ${timeFormatted}`,
-      };
-
-      stripeWebhookEvents.unshift(webhookEvt);
-      if (stripeWebhookEvents.length > 40) stripeWebhookEvents.pop();
-
-      // PIX EMV payload & Boleto line for instant Brazilian checkout
-      const pixCopiaECola = `00020126580014BR.GOV.BCB.PIX0136guiaponto-stripe-${sessionId.slice(
-        -10
-      )}5204000053039865406${finalAmountBrl.toFixed(
-        2
-      )}5802BR5920GUIAPONTO SOROCABA6008SOROCABA62070503***6304E2A1`;
-      const boletoLinhaDigitavel = `34191.79001 01043.510047 91020.150008 8 984500000${Math.round(
-        finalAmountBrl * 100
-      )
-        .toString()
-        .padStart(5, '0')}`;
-
-      res.json({
-        success: true,
-        mode: stripe ? 'live_api' : 'sandbox_ready',
-        sessionId,
-        paymentIntentId,
-        liveCheckoutUrl,
-        pixCopiaECola,
-        boletoLinhaDigitavel,
-        transaction,
-        webhookEvent: webhookEvt,
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        error: error?.message || 'Falha ao criar sessão de checkout no Stripe.',
-      });
-    }
-  });
-
-  app.post('/api/stripe/simulate-webhook', (req, res) => {
-    const {
-      eventType = 'invoice.payment_succeeded',
-      businessName = 'Restaurante Sabor & Fogo Co.',
-      planName = 'Plano Premium Pro (Anual)',
-      amountBrl = 297.0,
-      paymentMethod = 'PIX Instantâneo',
-    } = req.body || {};
-
-    const nowStr = new Date().toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-
-    const evt: StripeWebhookEventRecord = {
-      id: `evt_sim_${Date.now()}`,
-      type: eventType,
-      sessionId: `cs_live_${Math.random().toString(36).slice(2, 12)}`,
-      businessName,
-      planName,
-      amountBrl: Number(amountBrl),
-      paymentMethod,
-      httpStatus: 200,
-      receivedAt: `Hoje às ${nowStr}`,
-    };
-
-    stripeWebhookEvents.unshift(evt);
-    res.json({ success: true, webhookEvent: evt });
-  });
-
-  app.post('/api/stripe/webhook', (req, res) => {
-    const event = req.body || {};
-    const nowStr = new Date().toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-
-    const evt: StripeWebhookEventRecord = {
-      id: event.id || `evt_wh_${Date.now()}`,
-      type: event.type || 'checkout.session.completed',
-      sessionId: event.data?.object?.id || `cs_wh_${Date.now()}`,
-      businessName:
-        event.data?.object?.metadata?.businessName ||
-        'Assinante GuiaPonto Sorocaba',
-      planName: 'Plano Premium Pro',
-      amountBrl: event.data?.object?.amount_total
-        ? event.data.object.amount_total / 100
-        : 297.0,
-      paymentMethod: 'Stripe Webhook',
-      httpStatus: 200,
-      receivedAt: `Hoje às ${nowStr}`,
-    };
-
-    stripeWebhookEvents.unshift(evt);
-    res.json({ received: true, event: evt });
-  });
-
-  // =========================================================================
-  // MERCADO PAGO GATEWAY (Checkout Pro & Transparente: PIX, Cartão, Saldo MP & Boleto)
-  // =========================================================================
   interface MercadoPagoTransactionRecord {
     id: string;
     preferenceId: string;
@@ -831,7 +589,7 @@ ${couponUsed ? `• Cupom Aplicado: ${couponUsed}\n` : ''}• Mensagem: "${messa
       currency: 'BRL',
       supportedMethods: ['pix', 'card', 'account_money', 'boleto'],
       webhookEndpoint: '/api/mercadopago/webhook',
-      plans: STRIPE_PLAN_CATALOG,
+      plans: MERCADOPAGO_PLAN_CATALOG,
       transactions: mercadoPagoTransactions,
       webhookEvents: mercadoPagoWebhookEvents,
     });
@@ -852,8 +610,8 @@ ${couponUsed ? `• Cupom Aplicado: ${couponUsed}\n` : ''}• Mensagem: "${messa
 
       const selectedPlan =
         planId === 'enterprise'
-          ? STRIPE_PLAN_CATALOG.enterprise
-          : STRIPE_PLAN_CATALOG.premium;
+          ? MERCADOPAGO_PLAN_CATALOG.enterprise
+          : MERCADOPAGO_PLAN_CATALOG.premium;
 
       const baseAmount =
         billingCycle === 'annual'
@@ -1093,6 +851,81 @@ ${couponUsed ? `• Cupom Aplicado: ${couponUsed}\n` : ''}• Mensagem: "${messa
 
     mercadoPagoWebhookEvents.unshift(evt);
     res.status(200).json({ received: true, event: evt });
+  });
+
+  // Growth Tips Weekly Newsletter subscription endpoint for Business Insights
+  interface GrowthNewsletterSubscriber {
+    id: string;
+    email: string;
+    businessName: string;
+    topics: string[];
+    subscribedAt: string;
+  }
+
+  const growthNewsletterSubscribers: GrowthNewsletterSubscriber[] = [];
+
+  app.get('/api/newsletter/growth-tips', (_req, res) => {
+    res.json({
+      total: growthNewsletterSubscribers.length,
+      subscribers: growthNewsletterSubscribers,
+    });
+  });
+
+  app.post('/api/newsletter/growth-tips', (req, res) => {
+    const {
+      email = '',
+      businessName = '',
+      topics = ['SEO Local', 'Marketing Regional', 'Conversão WhatsApp'],
+    } = req.body || {};
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!normalizedEmail || !emailRegex.test(normalizedEmail)) {
+      res.status(400).json({
+        error: 'Informe um endereço de e-mail válido para concluir a assinatura.',
+      });
+      return;
+    }
+
+    const sanitizedTopics = Array.isArray(topics)
+      ? topics.filter((t) => typeof t === 'string' && t.trim().length > 0)
+      : ['SEO Local', 'Marketing Regional', 'Conversão WhatsApp'];
+
+    const existing = growthNewsletterSubscribers.find(
+      (item) => item.email === normalizedEmail
+    );
+
+    if (existing) {
+      existing.businessName = String(businessName).trim() || existing.businessName;
+      if (sanitizedTopics.length > 0) {
+        existing.topics = sanitizedTopics;
+      }
+      res.json({
+        success: true,
+        alreadySubscribed: true,
+        subscriber: existing,
+      });
+      return;
+    }
+
+    const subscriber: GrowthNewsletterSubscriber = {
+      id: `nl_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      email: normalizedEmail,
+      businessName: String(businessName).trim() || 'Negócio Local',
+      topics:
+        sanitizedTopics.length > 0
+          ? sanitizedTopics
+          : ['SEO Local', 'Marketing Regional', 'Conversão WhatsApp'],
+      subscribedAt: new Date().toISOString(),
+    };
+
+    growthNewsletterSubscribers.unshift(subscriber);
+    res.status(201).json({
+      success: true,
+      alreadySubscribed: false,
+      subscriber,
+    });
   });
 
   if (process.env.NODE_ENV !== 'production') {

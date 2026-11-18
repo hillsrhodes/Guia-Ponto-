@@ -341,7 +341,7 @@ export function FeaturedBusinesses({
               <span>Vitrine Sorocaba & Região • Proximidade Real</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
-              Sugestões de Empresas Próximas em Sorocaba
+              Sugestões de Negócios Próximos em Sorocaba
             </h2>
             <p className="text-slate-600 mt-2 text-base">
               Ative sua localização automática para ordenar as sugestões pela distância real até você em Sorocaba, Votorantim e arredores.
@@ -445,7 +445,7 @@ export function FeaturedBusinesses({
               className="px-8 py-4 rounded-2xl bg-white hover:bg-slate-900 text-slate-900 hover:text-white border-2 border-slate-900 font-extrabold text-sm shadow-md hover:shadow-xl transition-all inline-flex items-center gap-3 group cursor-pointer"
             >
               <Building2 className="w-4 h-4 text-[#FE3A18]" />
-              <span>Ver Todas as Empresas no Diretório Completo</span>
+              <span>Ver Todos os Negócios no Diretório Completo</span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-black">
                 Filtro AJAX
               </span>

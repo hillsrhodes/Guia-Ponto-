@@ -27,13 +27,10 @@ import {
   Wallet
 } from 'lucide-react';
 
-export type PaymentGatewayProvider = 'mercadopago' | 'stripe';
-
-export interface StripeGatewayTransaction {
+export interface MercadoPagoGatewayTransaction {
   id: string;
-  gateway?: PaymentGatewayProvider;
-  sessionId: string;
-  paymentIntentId: string;
+  preferenceId: string;
+  mpPaymentId: string;
   businessName: string;
   customerName: string;
   customerEmail: string;
@@ -41,21 +38,19 @@ export interface StripeGatewayTransaction {
   planId: 'premium' | 'enterprise';
   planName: 'Plano Premium Pro' | 'Enterprise Regional';
   billingCycle: 'annual' | 'monthly';
-  paymentMethod: 'card' | 'pix' | 'boleto' | 'account_money';
+  paymentMethod: 'pix' | 'card' | 'account_money' | 'boleto';
   amountBrl: number;
   monthlyEquivalentBrl: number;
   discountAppliedPct: number;
   couponCode?: string;
-  status: 'succeeded' | 'approved' | 'trialing_7d' | 'awaiting_pix' | 'processing';
+  status: 'approved' | 'in_process';
   receiptNumber: string;
   createdAt: string;
 }
 
-export interface StripeWebhookEventRecord {
+export interface MercadoPagoWebhookEventRecord {
   id: string;
-  type?: string;
-  topic?: string;
-  sessionId?: string;
+  topic: string;
   preferenceId?: string;
   mpPaymentId?: string;
   businessName: string;
@@ -66,7 +61,7 @@ export interface StripeWebhookEventRecord {
   receivedAt: string;
 }
 
-export interface GatewayConfigResponse {
+export interface MercadoPagoConfigResponse {
   gatewayActive: boolean;
   mode: 'live_api' | 'sandbox_ready';
   sdkVersion: string;
@@ -74,35 +69,31 @@ export interface GatewayConfigResponse {
   currency: string;
   supportedMethods: string[];
   webhookEndpoint: string;
-  transactions: any[];
-  webhookEvents: StripeWebhookEventRecord[];
+  transactions: MercadoPagoGatewayTransaction[];
+  webhookEvents: MercadoPagoWebhookEventRecord[];
 }
 
-interface StripeCheckoutModalProps {
+interface MercadoPagoCheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialGateway?: PaymentGatewayProvider;
   initialPlanId?: 'premium' | 'enterprise';
   initialBillingCycle?: 'annual' | 'monthly';
   defaultBusinessName?: string;
   defaultCustomerName?: string;
   defaultCustomerEmail?: string;
-  onSubscriptionCompleted?: (transaction: StripeGatewayTransaction) => void;
+  onSubscriptionCompleted?: (transaction: MercadoPagoGatewayTransaction) => void;
 }
 
-export function StripeCheckoutModal({
+export function MercadoPagoCheckoutModal({
   isOpen,
   onClose,
-  initialGateway = 'mercadopago',
   initialPlanId = 'premium',
   initialBillingCycle = 'annual',
   defaultBusinessName = 'Restaurante Sabor & Fogo Co.',
   defaultCustomerName = 'Alexandre Santos',
   defaultCustomerEmail = 'alexandre@guiaponto.com',
   onSubscriptionCompleted
-}: StripeCheckoutModalProps) {
-  const [gateway, setGateway] =
-    useState<PaymentGatewayProvider>(initialGateway);
+}: MercadoPagoCheckoutModalProps) {
   const [planId, setPlanId] = useState<'premium' | 'enterprise'>(initialPlanId);
   const [billingCycle, setBillingCycle] = useState<'annual' | 'monthly'>(
     initialBillingCycle
@@ -125,14 +116,10 @@ export function StripeCheckoutModal({
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedTx, setCompletedTx] =
-    useState<StripeGatewayTransaction | null>(null);
+    useState<MercadoPagoGatewayTransaction | null>(null);
   const [pixPayload, setPixPayload] = useState<string>('');
   const [boletoLine, setBoletoLine] = useState<string>('');
   const [copiedCode, setCopiedCode] = useState(false);
-
-  useEffect(() => {
-    setGateway(initialGateway);
-  }, [initialGateway]);
 
   useEffect(() => {
     setPlanId(initialPlanId);
@@ -142,16 +129,7 @@ export function StripeCheckoutModal({
     setBillingCycle(initialBillingCycle);
   }, [initialBillingCycle]);
 
-  // If switching to Stripe and 'account_money' was selected, switch to 'pix'
-  useEffect(() => {
-    if (gateway === 'stripe' && paymentMethod === 'account_money') {
-      setPaymentMethod('pix');
-    }
-  }, [gateway, paymentMethod]);
-
   if (!isOpen) return null;
-
-  const isMP = gateway === 'mercadopago';
 
   const baseAmount =
     planId === 'enterprise'
@@ -183,11 +161,7 @@ export function StripeCheckoutModal({
     setIsProcessing(true);
 
     try {
-      const endpoint = isMP
-        ? '/api/mercadopago/create-preference'
-        : '/api/stripe/create-checkout-session';
-
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/mercadopago/create-preference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -204,17 +178,10 @@ export function StripeCheckoutModal({
 
       const data = await res.json();
       if (data?.transaction) {
-        const normalizedTx: StripeGatewayTransaction = {
+        const normalizedTx: MercadoPagoGatewayTransaction = {
           ...data.transaction,
-          gateway,
-          sessionId:
-            data.transaction.sessionId ||
-            data.transaction.preferenceId ||
-            `pref_${Date.now()}`,
-          paymentIntentId:
-            data.transaction.paymentIntentId ||
-            data.transaction.mpPaymentId ||
-            `pay_${Date.now()}`
+          preferenceId: data.transaction.preferenceId || `pref_${Date.now()}`,
+          mpPaymentId: data.transaction.mpPaymentId || `${Date.now()}`
         };
 
         setCompletedTx(normalizedTx);
@@ -227,7 +194,7 @@ export function StripeCheckoutModal({
             JSON.stringify(normalizedTx)
           );
           window.dispatchEvent(
-            new CustomEvent('guiaponto-stripe-subscription-updated', {
+            new CustomEvent('guiaponto-mercadopago-subscription-updated', {
               detail: normalizedTx
             })
           );
@@ -271,28 +238,16 @@ export function StripeCheckoutModal({
         exit={{ opacity: 0, scale: 0.96, y: 12 }}
         className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl overflow-hidden max-h-[92vh] flex flex-col"
       >
-        {/* Top Gateway Header with Mercado Pago vs Stripe Switcher */}
-        <div className="bg-slate-950 text-white px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 shrink-0">
+        {/* Top Mercado Pago Gateway Header */}
+        <div className="bg-slate-950 text-white px-6 py-4 flex items-center justify-between gap-4 border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
-            <div
-              className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-lg transition-colors ${
-                isMP
-                  ? 'bg-[#009EE3] shadow-[#009EE3]/30'
-                  : 'bg-[#635BFF] shadow-[#635BFF]/30'
-              }`}
-            >
-              {isMP ? 'MP' : 'S'}
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-lg bg-[#009EE3] shadow-[#009EE3]/30">
+              MP
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`text-xs font-black tracking-wider uppercase ${
-                    isMP ? 'text-[#38BDF8]' : 'text-[#A5B4FC]'
-                  }`}
-                >
-                  {isMP
-                    ? 'Mercado Pago Checkout Pro & PIX Transparente'
-                    : 'Stripe Checkout Brasil · Gateway Global'}
+                <span className="text-xs font-black tracking-wider uppercase text-[#38BDF8]">
+                  Mercado Pago Checkout Pro & PIX Transparente
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold">
                   TLS 1.3 · Moeda BRL (R$)
@@ -304,41 +259,13 @@ export function StripeCheckoutModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-center">
-            {/* Gateway Selector Pills */}
-            <div className="flex items-center gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setGateway('mercadopago')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                  isMP
-                    ? 'bg-[#009EE3] text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Mercado Pago
-              </button>
-              <button
-                type="button"
-                onClick={() => setGateway('stripe')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                  !isMP
-                    ? 'bg-[#635BFF] text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Stripe
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleResetAndClose}
-              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleResetAndClose}
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Body */}
@@ -350,17 +277,8 @@ export function StripeCheckoutModal({
               </div>
 
               <div className="space-y-1">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-black uppercase ${
-                    completedTx.gateway === 'mercadopago'
-                      ? 'bg-[#009EE3]/15 text-[#009EE3]'
-                      : 'bg-[#635BFF]/10 text-[#635BFF]'
-                  }`}
-                >
-                  {completedTx.gateway === 'mercadopago'
-                    ? 'Mercado Pago Aprovado'
-                    : 'Stripe Session Confirmada'}{' '}
-                  • Recibo #{completedTx.receiptNumber}
+                <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-[#009EE3]/15 text-[#009EE3]">
+                  Mercado Pago Aprovado • Recibo #{completedTx.receiptNumber}
                 </span>
                 <h4 className="text-2xl font-black text-slate-900 pt-1">
                   {completedTx.planName} Ativado com Sucesso!
@@ -368,9 +286,7 @@ export function StripeCheckoutModal({
                 <p className="text-xs sm:text-sm text-slate-600">
                   O webhook{' '}
                   <code className="font-mono text-slate-900">
-                    {completedTx.gateway === 'mercadopago'
-                      ? 'payment.updated (approved)'
-                      : 'checkout.session.completed'}
+                    payment.updated (approved)
                   </code>{' '}
                   liberou todos os benefícios Pro para{' '}
                   <strong>{completedTx.businessName}</strong>.
@@ -382,43 +298,26 @@ export function StripeCheckoutModal({
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Gateway Processador:</span>
                   <span className="font-black text-slate-900">
-                    {completedTx.gateway === 'mercadopago'
-                      ? 'Mercado Pago Brasil (MLB)'
-                      : 'Stripe Brasil'}
+                    Mercado Pago Brasil (MLB)
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">
-                    {completedTx.gateway === 'mercadopago'
-                      ? 'Preference ID:'
-                      : 'Stripe Session ID:'}
-                  </span>
+                  <span className="text-slate-500">Preference ID:</span>
                   <span className="font-mono font-bold text-slate-900">
-                    {completedTx.sessionId}
+                    {completedTx.preferenceId}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">
-                    {completedTx.gateway === 'mercadopago'
-                      ? 'Pagamento MP ID:'
-                      : 'PaymentIntent ID:'}
-                  </span>
-                  <span
-                    className={`font-mono font-bold ${
-                      completedTx.gateway === 'mercadopago'
-                        ? 'text-[#009EE3]'
-                        : 'text-[#635BFF]'
-                    }`}
-                  >
-                    {completedTx.paymentIntentId}
+                  <span className="text-slate-500">Pagamento MP ID:</span>
+                  <span className="font-mono font-bold text-[#009EE3]">
+                    {completedTx.mpPaymentId}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Plano & Ciclo:</span>
                   <span className="font-bold text-slate-900">
                     {completedTx.planName} (
-                    {completedTx.billingCycle === 'annual' ? 'Anual' : 'Mensal'}
-                    )
+                    {completedTx.billingCycle === 'annual' ? 'Anual' : 'Mensal'})
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -439,11 +338,7 @@ export function StripeCheckoutModal({
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-emerald-900 flex items-center gap-1.5">
                       <QrCode className="w-4 h-4 text-emerald-600" />
-                      Código PIX{' '}
-                      {completedTx.gateway === 'mercadopago'
-                        ? 'Mercado Pago'
-                        : 'Stripe'}{' '}
-                      (Copia e Cola)
+                      Código PIX Mercado Pago (Copia e Cola)
                     </span>
                     <button
                       type="button"
@@ -472,10 +367,7 @@ export function StripeCheckoutModal({
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-amber-900 flex items-center gap-1.5">
                       <FileText className="w-4 h-4 text-amber-600" />
-                      Linha Digitável Boleto{' '}
-                      {completedTx.gateway === 'mercadopago'
-                        ? 'Mercado Pago'
-                        : 'Stripe'}
+                      Linha Digitável Boleto Mercado Pago
                     </span>
                     <button
                       type="button"
@@ -515,11 +407,7 @@ export function StripeCheckoutModal({
               {/* Left Column: Plan Summary & Pricing Breakdown */}
               <div className="lg:col-span-5 bg-slate-950 text-white rounded-2xl p-5 border border-slate-800 space-y-5">
                 <div className="space-y-2">
-                  <span
-                    className={`text-[11px] font-bold uppercase tracking-wider ${
-                      isMP ? 'text-[#38BDF8]' : 'text-[#A5B4FC]'
-                    }`}
-                  >
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#38BDF8]">
                     1. Escolha o Plano e Ciclo
                   </span>
                   <div className="grid grid-cols-2 gap-2">
@@ -627,16 +515,12 @@ export function StripeCheckoutModal({
                 <div className="space-y-1.5 text-[11px] text-slate-300 pt-1">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span>
-                      Compra Garantida{' '}
-                      {isMP ? 'Mercado Pago Brasil' : 'Stripe Brasil'} (7 dias)
-                    </span>
+                    <span>Compra Garantida Mercado Pago Brasil (7 dias)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span>
-                      Liberação instantânea via Webhook{' '}
-                      {isMP ? '/api/mercadopago/webhook' : '/api/stripe/webhook'}
+                      Liberação instantânea via Webhook /api/mercadopago/webhook
                     </span>
                   </div>
                 </div>
@@ -710,14 +594,9 @@ export function StripeCheckoutModal({
                 {/* Payment Method Selector */}
                 <div className="space-y-3">
                   <label className="block text-[11px] font-bold uppercase text-slate-600">
-                    Meio de Pagamento no{' '}
-                    {isMP ? 'Mercado Pago Brasil' : 'Stripe Brasil'}
+                    Meio de Pagamento no Mercado Pago Brasil
                   </label>
-                  <div
-                    className={`grid gap-2.5 ${
-                      isMP ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'
-                    }`}
-                  >
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('pix')}
@@ -736,9 +615,7 @@ export function StripeCheckoutModal({
                       onClick={() => setPaymentMethod('card')}
                       className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
                         paymentMethod === 'card'
-                          ? isMP
-                            ? 'bg-[#009EE3]/10 border-[#009EE3] text-[#009EE3] font-black'
-                            : 'bg-[#635BFF]/10 border-[#635BFF] text-[#635BFF] font-black'
+                          ? 'bg-[#009EE3]/10 border-[#009EE3] text-[#009EE3] font-black'
                           : 'bg-slate-50 border-slate-200 text-slate-600 font-semibold'
                       }`}
                     >
@@ -746,20 +623,18 @@ export function StripeCheckoutModal({
                       <span className="text-xs">Cartão até 12x</span>
                     </button>
 
-                    {isMP && (
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod('account_money')}
-                        className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                          paymentMethod === 'account_money'
-                            ? 'bg-[#009EE3]/15 border-[#009EE3] text-[#009EE3] font-black'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 font-semibold'
-                        }`}
-                      >
-                        <Wallet className="w-5 h-5" />
-                        <span className="text-xs">Saldo Conta MP</span>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('account_money')}
+                      className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                        paymentMethod === 'account_money'
+                          ? 'bg-[#009EE3]/15 border-[#009EE3] text-[#009EE3] font-black'
+                          : 'bg-slate-50 border-slate-200 text-slate-600 font-semibold'
+                      }`}
+                    >
+                      <Wallet className="w-5 h-5" />
+                      <span className="text-xs">Saldo Conta MP</span>
+                    </button>
 
                     <button
                       type="button"
@@ -781,9 +656,7 @@ export function StripeCheckoutModal({
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                        Número do Cartão (
-                        {isMP ? 'Mercado Pago Transparente' : 'Stripe Elements'}
-                        )
+                        Número do Cartão (Mercado Pago Transparente)
                       </label>
                       <input
                         type="text"
@@ -845,10 +718,7 @@ export function StripeCheckoutModal({
                   <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-xs text-emerald-900 space-y-1">
                     <div className="font-black flex items-center gap-1.5">
                       <QrCode className="w-4 h-4 text-emerald-600" />
-                      <span>
-                        PIX Oficial via{' '}
-                        {isMP ? 'Mercado Pago (Aprovação em 2s)' : 'Stripe Brasil'}
-                      </span>
+                      <span>PIX Oficial via Mercado Pago (Aprovação em 2s)</span>
                     </div>
                     <p className="text-[11px] text-emerald-800">
                       Gera QR Code dinâmico e código Copia e Cola com confirmação
@@ -867,7 +737,7 @@ export function StripeCheckoutModal({
                     </div>
                     <p className="text-[11px] text-sky-800">
                       Pague usando o saldo disponível na carteira digital Mercado Pago
-                      da sua empresa com cashback e aprovação instantânea.
+                      da sua empresa com aprovação instantânea.
                     </p>
                   </div>
                 )}
@@ -876,10 +746,7 @@ export function StripeCheckoutModal({
                   <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 space-y-1">
                     <div className="font-black flex items-center gap-1.5">
                       <FileText className="w-4 h-4 text-amber-600" />
-                      <span>
-                        Boleto Registrado{' '}
-                        {isMP ? 'Mercado Pago / Lotérica PEC' : 'Stripe B2B'}
-                      </span>
+                      <span>Boleto Registrado Mercado Pago / Lotérica PEC</span>
                     </div>
                     <p className="text-[11px] text-amber-800">
                       Emite linha digitável registrada no CNPJ informado com envio
@@ -891,25 +758,18 @@ export function StripeCheckoutModal({
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className={`w-full py-4 rounded-2xl text-white font-black text-sm shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    isMP
-                      ? 'bg-[#009EE3] hover:bg-[#0089c7] shadow-[#009EE3]/25'
-                      : 'bg-[#635BFF] hover:bg-[#5249e6] shadow-[#635BFF]/25'
-                  }`}
+                  className="w-full py-4 rounded-2xl text-white font-black text-sm shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer bg-[#009EE3] hover:bg-[#0089c7] shadow-[#009EE3]/25"
                 >
                   {isProcessing ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>
-                        Processando no{' '}
-                        {isMP ? 'Mercado Pago...' : 'Gateway Stripe...'}
-                      </span>
+                      <span>Processando no Mercado Pago...</span>
                     </>
                   ) : (
                     <>
                       <Lock className="w-4 h-4" />
                       <span>
-                        Pagar com {isMP ? 'Mercado Pago' : 'Stripe'} · R${' '}
+                        Pagar com Mercado Pago · R${' '}
                         {finalAmount.toFixed(2).replace('.', ',')}
                       </span>
                       <ArrowRight className="w-4 h-4" />
@@ -925,34 +785,23 @@ export function StripeCheckoutModal({
   );
 }
 
-export function StripeGatewayStatusPanel({
+export function MercadoPagoGatewayStatusPanel({
   onOpenCheckout
 }: {
-  onOpenCheckout?: (
-    planId?: 'premium' | 'enterprise',
-    gateway?: PaymentGatewayProvider
-  ) => void;
+  onOpenCheckout?: (planId?: 'premium' | 'enterprise') => void;
 }) {
-  const [activeProviderTab, setActiveProviderTab] =
-    useState<PaymentGatewayProvider>('mercadopago');
-  const [mpConfig, setMpConfig] = useState<GatewayConfigResponse | null>(null);
-  const [stripeConfig, setStripeConfig] =
-    useState<GatewayConfigResponse | null>(null);
+  const [mpConfig, setMpConfig] = useState<MercadoPagoConfigResponse | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isSimulatingWebhook, setIsSimulatingWebhook] = useState(false);
 
-  const fetchGatewaysStatus = async () => {
+  const fetchGatewayStatus = async () => {
     setIsLoading(true);
     try {
-      const [mpRes, stRes] = await Promise.all([
-        fetch('/api/mercadopago/config'),
-        fetch('/api/stripe/config')
-      ]);
+      const mpRes = await fetch('/api/mercadopago/config');
       if (mpRes.ok) {
         setMpConfig(await mpRes.json());
-      }
-      if (stRes.ok) {
-        setStripeConfig(await stRes.json());
       }
     } catch {
       // ignore offline
@@ -962,17 +811,17 @@ export function StripeGatewayStatusPanel({
   };
 
   useEffect(() => {
-    void fetchGatewaysStatus();
+    void fetchGatewayStatus();
     const handleSubUpdated = () => {
-      void fetchGatewaysStatus();
+      void fetchGatewayStatus();
     };
     window.addEventListener(
-      'guiaponto-stripe-subscription-updated',
+      'guiaponto-mercadopago-subscription-updated',
       handleSubUpdated
     );
     return () =>
       window.removeEventListener(
-        'guiaponto-stripe-subscription-updated',
+        'guiaponto-mercadopago-subscription-updated',
         handleSubUpdated
       );
   }, []);
@@ -980,32 +829,21 @@ export function StripeGatewayStatusPanel({
   const handleSimulateWebhook = async () => {
     setIsSimulatingWebhook(true);
     try {
-      const endpoint =
-        activeProviderTab === 'mercadopago'
-          ? '/api/mercadopago/simulate-webhook'
-          : '/api/stripe/simulate-webhook';
-
-      await fetch(endpoint, {
+      await fetch('/api/mercadopago/simulate-webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessName: 'Restaurante Sabor & Fogo Co.',
           planName: 'Plano Premium Pro (Anual)',
           amountBrl: 297.0,
-          paymentMethod:
-            activeProviderTab === 'mercadopago'
-              ? 'PIX Mercado Pago'
-              : 'PIX Instantâneo Stripe'
+          paymentMethod: 'PIX Mercado Pago'
         })
       });
-      await fetchGatewaysStatus();
+      await fetchGatewayStatus();
     } finally {
       setIsSimulatingWebhook(false);
     }
   };
-
-  const isMP = activeProviderTab === 'mercadopago';
-  const currentConfig = isMP ? mpConfig : stripeConfig;
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
@@ -1016,49 +854,19 @@ export function StripeGatewayStatusPanel({
               <Activity className="w-3.5 h-3.5" />
               <span>Mercado Pago Brasil Ativo</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#635BFF]/10 text-[#635BFF] text-xs font-black">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Stripe Brasil Ativo</span>
-            </span>
           </div>
           <h3 className="text-xl font-black text-slate-900">
-            Central Multi-Gateway de Pagamentos: Mercado Pago & Stripe
+            Central de Pagamentos Mercado Pago
           </h3>
           <p className="text-xs text-slate-500">
-            Alterne entre o gateway <strong>Mercado Pago</strong> (
-            <code className="font-mono">/api/mercadopago/*</code>) e{' '}
-            <strong>Stripe</strong> (<code className="font-mono">/api/stripe/*</code>
-            ) para inspecionar preferências, PIX, cartões e webhooks em tempo real.
+            Monitoramento em tempo real do gateway{' '}
+            <strong>Mercado Pago</strong> (
+            <code className="font-mono">/api/mercadopago/*</code>) para
+            preferências, PIX, cartões, saldo MP e webhooks IPN.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Provider Switcher */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 border border-slate-200 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setActiveProviderTab('mercadopago')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                isMP
-                  ? 'bg-[#009EE3] text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Mercado Pago
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveProviderTab('stripe')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
-                !isMP
-                  ? 'bg-[#635BFF] text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Stripe
-            </button>
-          </div>
-
           <button
             type="button"
             onClick={handleSimulateWebhook}
@@ -1066,29 +874,21 @@ export function StripeGatewayStatusPanel({
             className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
           >
             <Webhook
-              className={`w-3.5 h-3.5 ${
-                isMP ? 'text-[#009EE3]' : 'text-[#635BFF]'
-              } ${isSimulatingWebhook ? 'animate-spin' : ''}`}
+              className={`w-3.5 h-3.5 text-[#009EE3] ${
+                isSimulatingWebhook ? 'animate-spin' : ''
+              }`}
             />
-            <span>
-              Testar Webhook {isMP ? 'Mercado Pago' : 'Stripe'}
-            </span>
+            <span>Testar Webhook Mercado Pago</span>
           </button>
 
           {onOpenCheckout && (
             <button
               type="button"
-              onClick={() => onOpenCheckout('premium', activeProviderTab)}
-              className={`px-4 py-2.5 rounded-xl text-white text-xs font-black flex items-center gap-1.5 shadow-md cursor-pointer transition-all ${
-                isMP
-                  ? 'bg-[#009EE3] hover:bg-[#0089c7] shadow-[#009EE3]/20'
-                  : 'bg-[#635BFF] hover:bg-[#5249e6] shadow-[#635BFF]/20'
-              }`}
+              onClick={() => onOpenCheckout('premium')}
+              className="px-4 py-2.5 rounded-xl text-white text-xs font-black flex items-center gap-1.5 shadow-md cursor-pointer transition-all bg-[#009EE3] hover:bg-[#0089c7] shadow-[#009EE3]/20"
             >
               <CreditCard className="w-3.5 h-3.5" />
-              <span>
-                Abrir Checkout {isMP ? 'Mercado Pago' : 'Stripe'}
-              </span>
+              <span>Abrir Checkout Mercado Pago</span>
             </button>
           )}
         </div>
@@ -1098,17 +898,14 @@ export function StripeGatewayStatusPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
           <span className="text-[11px] font-bold text-slate-400 block">
-            Gateway Selecionado
+            Gateway Principal
           </span>
           <div className="text-base font-black text-emerald-600 mt-1 flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4" />
-            <span>
-              {isMP ? 'Mercado Pago (MLB)' : 'Stripe Brasil (BR)'}
-            </span>
+            <span>Mercado Pago (MLB)</span>
           </div>
           <span className="text-[11px] text-slate-500 font-mono block mt-0.5 truncate">
-            {currentConfig?.sdkVersion ||
-              (isMP ? 'mercadopago-nodejs v2' : 'stripe-node v22')}
+            {mpConfig?.sdkVersion || 'mercadopago-nodejs v2'}
           </span>
         </div>
 
@@ -1117,9 +914,7 @@ export function StripeGatewayStatusPanel({
             Meios Habilitados
           </span>
           <div className="text-base font-black text-slate-900 mt-1">
-            {isMP
-              ? 'PIX, Cartão, Saldo MP & Boleto'
-              : 'Cartão 12x, PIX & Boleto'}
+            PIX, Cartão, Saldo MP & Boleto
           </div>
           <span className="text-[11px] text-emerald-600 font-semibold block mt-0.5">
             Liquidação Instantânea em BRL (R$)
@@ -1130,12 +925,8 @@ export function StripeGatewayStatusPanel({
           <span className="text-[11px] font-bold text-slate-400 block">
             Transações Confirmadas
           </span>
-          <div
-            className={`text-base font-black font-mono mt-1 ${
-              isMP ? 'text-[#009EE3]' : 'text-[#635BFF]'
-            }`}
-          >
-            {currentConfig?.transactions?.length || 2} pagamentos aprovados
+          <div className="text-base font-black font-mono mt-1 text-[#009EE3]">
+            {mpConfig?.transactions?.length || 2} pagamentos aprovados
           </div>
           <span className="text-[11px] text-slate-500 block mt-0.5">
             Conciliação automática ativa
@@ -1147,7 +938,7 @@ export function StripeGatewayStatusPanel({
             Endpoint de Webhook / IPN
           </span>
           <div className="text-sm font-black text-slate-900 font-mono mt-1">
-            POST {currentConfig?.webhookEndpoint || '/api/mercadopago/webhook'}
+            POST {mpConfig?.webhookEndpoint || '/api/mercadopago/webhook'}
           </div>
           <span className="text-[11px] text-emerald-600 font-bold block mt-0.5">
             HTTP 200 OK · Tempo Real
@@ -1156,15 +947,15 @@ export function StripeGatewayStatusPanel({
       </div>
 
       {/* Recent Transactions & Webhooks */}
-      {!isLoading && currentConfig && (
+      {!isLoading && mpConfig && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-2.5">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
               <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-              Últimos Pagamentos {isMP ? 'Mercado Pago' : 'Stripe'}
+              Últimos Pagamentos Mercado Pago
             </h4>
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-              {currentConfig.transactions.map((tx: any) => (
+              {mpConfig.transactions.map((tx) => (
                 <div
                   key={tx.id}
                   className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2 text-xs"
@@ -1174,7 +965,7 @@ export function StripeGatewayStatusPanel({
                       {tx.businessName}
                     </div>
                     <div className="text-[11px] text-slate-500 font-mono truncate">
-                      {tx.preferenceId || tx.sessionId} · {tx.planName}
+                      {tx.preferenceId} · {tx.planName}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
@@ -1192,15 +983,11 @@ export function StripeGatewayStatusPanel({
 
           <div className="space-y-2.5">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Webhook
-                className={`w-3.5 h-3.5 ${
-                  isMP ? 'text-[#009EE3]' : 'text-[#635BFF]'
-                }`}
-              />
-              Notificações Webhook / IPN {isMP ? 'Mercado Pago' : 'Stripe'}
+              <Webhook className="w-3.5 h-3.5 text-[#009EE3]" />
+              Notificações Webhook / IPN Mercado Pago
             </h4>
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-              {currentConfig.webhookEvents.map((evt) => (
+              {mpConfig.webhookEvents.map((evt) => (
                 <div
                   key={evt.id}
                   className="p-3 rounded-2xl bg-slate-950 text-white border border-slate-800 flex items-center justify-between gap-2 text-xs"
@@ -1210,12 +997,8 @@ export function StripeGatewayStatusPanel({
                       <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono text-[10px] font-bold">
                         200 OK
                       </span>
-                      <span
-                        className={`font-mono font-bold truncate ${
-                          isMP ? 'text-[#38BDF8]' : 'text-[#A5B4FC]'
-                        }`}
-                      >
-                        {evt.topic || evt.type}
+                      <span className="font-mono font-bold truncate text-[#38BDF8]">
+                        {evt.topic}
                       </span>
                     </div>
                     <div className="text-[11px] text-slate-400 truncate mt-0.5">

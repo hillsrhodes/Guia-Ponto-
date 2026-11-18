@@ -29,19 +29,22 @@ import {
   MessageSquare,
   CheckCircle2,
   Eye,
-  Filter
+  Filter,
+  BookOpen
 } from 'lucide-react';
 import { SorocabaGrowthHeatmap } from './SorocabaGrowthHeatmap';
 import {
-  StripeCheckoutModal,
-  StripeGatewayStatusPanel
-} from '../ui/StripeCheckoutModal';
+  MercadoPagoCheckoutModal,
+  MercadoPagoGatewayStatusPanel
+} from '../ui/MercadoPagoCheckoutModal';
+import { MasterBlogArticleEditor } from './MasterBlogArticleEditor';
 
 export type AdminTabId =
   | 'overview'
   | 'businesses'
   | 'subscriptions'
   | 'moderation'
+  | 'blog_editor'
   | 'ai_governance'
   | 'settings';
 
@@ -395,9 +398,8 @@ export function MasterAdminPanelSPA({
     INITIAL_MODERATION_QUEUE
   );
   const [coupons, setCoupons] = useState<AdminPromoCoupon[]>(INITIAL_COUPONS);
-  const [adminStripeModalOpen, setAdminStripeModalOpen] = useState<boolean>(false);
-  const [adminStripePlanId, setAdminStripePlanId] = useState<'premium' | 'enterprise'>('premium');
-  const [adminCheckoutGateway, setAdminCheckoutGateway] = useState<'mercadopago' | 'stripe'>('mercadopago');
+  const [adminMpModalOpen, setAdminMpModalOpen] = useState<boolean>(false);
+  const [adminMpPlanId, setAdminMpPlanId] = useState<'premium' | 'enterprise'>('premium');
 
   // Filters for Business Management
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -672,7 +674,7 @@ export function MasterAdminPanelSPA({
               },
               {
                 id: 'businesses',
-                label: 'Empresas & Lojistas',
+                label: 'Negócios & Lojistas',
                 icon: Building2,
                 badge: `${metrics.totalBusinesses}`
               },
@@ -690,6 +692,12 @@ export function MasterAdminPanelSPA({
                   metrics.pendingModerationCount > 0
                     ? `${metrics.pendingModerationCount}`
                     : null
+              },
+              {
+                id: 'blog_editor',
+                label: 'Editor de Artigos (Blog)',
+                icon: BookOpen,
+                badge: 'BLOG'
               },
               {
                 id: 'ai_governance',
@@ -777,9 +785,10 @@ export function MasterAdminPanelSPA({
               </div>
               <h1 className="text-lg sm:text-xl font-black text-slate-900 truncate">
                 {activeTab === 'overview' && 'Visão Geral da Plataforma & Operações'}
-                {activeTab === 'businesses' && 'Gestão de Empresas & Diretório Local'}
+                {activeTab === 'businesses' && 'Gestão de Negócios & Diretório Local'}
                 {activeTab === 'subscriptions' && 'Faturamento, Assinaturas & Planos'}
                 {activeTab === 'moderation' && 'Fila de Moderação & Auditoria IA'}
+                {activeTab === 'blog_editor' && 'Editor de Artigos do Blog • Business Insights'}
                 {activeTab === 'ai_governance' && 'Governança Gemini IA & Consumo'}
                 {activeTab === 'settings' && 'Configurações Globais do Sistema'}
               </h1>
@@ -844,14 +853,14 @@ export function MasterAdminPanelSPA({
 
                 <div className="bg-white rounded-3xl p-6 border border-slate-200 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                    <span>Empresas Gerenciadas</span>
+                    <span>Negócios Gerenciados</span>
                     <Building2 className="w-4 h-4 text-[#FE3A18]" />
                   </div>
                   <div className="text-3xl font-black text-slate-900 font-mono tabular-nums">
                     {metrics.totalBusinesses}
                   </div>
                   <div className="text-xs text-slate-500">
-                    {metrics.verifiedCount} verificadas ·{' '}
+                    {metrics.verifiedCount} verificados ·{' '}
                     <strong className="text-amber-600">{metrics.pendingCount} pendentes</strong>
                   </div>
                 </div>
@@ -890,7 +899,7 @@ export function MasterAdminPanelSPA({
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                     <div>
                       <h3 className="text-lg font-black text-slate-900">
-                        Empresas Aguardando Verificação Documental / CNPJ
+                        Negócios Aguardando Verificação Documental / CNPJ
                       </h3>
                       <p className="text-xs text-slate-500">
                         Aprove o cadastro para liberar o selo oficial de segurança no diretório de Sorocaba.
@@ -901,13 +910,13 @@ export function MasterAdminPanelSPA({
                       onClick={() => setActiveTab('businesses')}
                       className="text-xs font-bold text-[#FE3A18] hover:underline cursor-pointer whitespace-nowrap shrink-0"
                     >
-                      Ver Todas →
+                      Ver Todos →
                     </button>
                   </div>
 
                   {businesses.filter((b) => b.status === 'Pendente Auditoria').length === 0 ? (
                     <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center text-xs font-bold text-emerald-800">
-                      Todas as empresas cadastradas em Sorocaba já foram auditadas e verificadas!
+                      Todos os negócios cadastrados em Sorocaba já foram auditados e verificados!
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -972,7 +981,7 @@ export function MasterAdminPanelSPA({
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs font-bold">
                         <span className="text-slate-300">Plano Gratuito (Porta de Entrada)</span>
-                        <span className="font-mono text-slate-400">{metrics.freeCount} empresas</span>
+                        <span className="font-mono text-slate-400">{metrics.freeCount} negócios</span>
                       </div>
                       <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
                         <div
@@ -987,7 +996,7 @@ export function MasterAdminPanelSPA({
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs font-bold">
                         <span className="text-amber-300">Plano Premium Pro (R$ 24,75–49,90)</span>
-                        <span className="font-mono text-amber-400">{metrics.premiumCount} empresas</span>
+                        <span className="font-mono text-amber-400">{metrics.premiumCount} negócios</span>
                       </div>
                       <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
                         <div
@@ -1002,7 +1011,7 @@ export function MasterAdminPanelSPA({
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs font-bold">
                         <span className="text-purple-300">Enterprise Regional VIP (R$ 149/mês)</span>
-                        <span className="font-mono text-purple-400">{metrics.enterpriseCount} empresas</span>
+                        <span className="font-mono text-purple-400">{metrics.enterpriseCount} negócios</span>
                       </div>
                       <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
                         <div
@@ -1033,7 +1042,7 @@ export function MasterAdminPanelSPA({
             </div>
           )}
 
-          {/* ================= TAB 2: GESTÃO DE EMPRESAS & DIRETÓRIO ================= */}
+          {/* ================= TAB 2: GESTÃO DE NEGÓCIOS & DIRETÓRIO ================= */}
           {activeTab === 'businesses' && (
             <div className="space-y-6">
               {/* Search & Filter Bar */}
@@ -1360,12 +1369,11 @@ export function MasterAdminPanelSPA({
                 </div>
               </div>
 
-              {/* Mercado Pago & Stripe Gateway & Webhooks Monitor */}
-              <StripeGatewayStatusPanel
-                onOpenCheckout={(plan, provider) => {
-                  setAdminStripePlanId(plan || 'premium');
-                  setAdminCheckoutGateway(provider || 'mercadopago');
-                  setAdminStripeModalOpen(true);
+              {/* Mercado Pago Gateway & Webhooks Monitor */}
+              <MercadoPagoGatewayStatusPanel
+                onOpenCheckout={(plan) => {
+                  setAdminMpPlanId(plan || 'premium');
+                  setAdminMpModalOpen(true);
                 }}
               />
             </div>
@@ -1523,6 +1531,11 @@ export function MasterAdminPanelSPA({
                 </div>
               </div>
             </div>
+          )}
+
+          {/* ================= TAB 5B: EDITOR DE ARTIGOS DO BLOG ================= */}
+          {activeTab === 'blog_editor' && (
+            <MasterBlogArticleEditor onNotify={triggerToast} />
           )}
 
           {/* ================= TAB 6: CONFIGURAÇÕES GLOBAIS DO SISTEMA ================= */}
@@ -1856,7 +1869,7 @@ export function MasterAdminPanelSPA({
                       Disparar Comunicado Oficial para Lojistas
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Envie um aviso diretamente para a central de notificações de todas as empresas de Sorocaba.
+                      Envie um aviso diretamente para a central de notificações de todos os negócios de Sorocaba.
                     </p>
                   </div>
 
@@ -2033,12 +2046,11 @@ export function MasterAdminPanelSPA({
         )}
       </AnimatePresence>
 
-      {/* Mercado Pago & Stripe Checkout Modal from Admin Panel */}
-      <StripeCheckoutModal
-        isOpen={adminStripeModalOpen}
-        onClose={() => setAdminStripeModalOpen(false)}
-        initialGateway={adminCheckoutGateway}
-        initialPlanId={adminStripePlanId}
+      {/* Mercado Pago Checkout Modal from Admin Panel */}
+      <MercadoPagoCheckoutModal
+        isOpen={adminMpModalOpen}
+        onClose={() => setAdminMpModalOpen(false)}
+        initialPlanId={adminMpPlanId}
       />
     </div>
   );

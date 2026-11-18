@@ -43,6 +43,7 @@ import {
   SorocabaHubPoint
 } from '../../utils/sorocabaGeolocation';
 import { useSorocabaGeolocationCenter } from '../../hooks/useSorocabaGeolocationCenter';
+import { ContributorSummaryStrip } from '../contributor/ContributorSummaryStrip';
 
 export interface DirectoryBusiness {
   id: string;
@@ -691,6 +692,7 @@ interface BusinessDirectoryPageProps {
   onOpenExecutiveDashboard: () => void;
   onContactWhatsApp: (businessName: string) => void;
   onOpenBusinessLanding?: (business: DirectoryBusiness, adminMode?: boolean) => void;
+  onOpenContributorProfile?: () => void;
   initialCategory?: string;
   initialSearch?: string;
   initialRadius?: number;
@@ -703,6 +705,7 @@ export function BusinessDirectoryPage({
   onOpenExecutiveDashboard,
   onContactWhatsApp,
   onOpenBusinessLanding,
+  onOpenContributorProfile,
   initialCategory = 'Todos',
   initialSearch = '',
   initialRadius = 25
@@ -1039,10 +1042,10 @@ export function BusinessDirectoryPage({
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-slate-200 text-xs font-bold border border-white/10">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Empresas Verificadas em Sorocaba e Região Metropolitana</span>
+                <span>Negócios Verificados em Sorocaba e Região Metropolitana</span>
               </div>
               <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white">
-                Diretório de Empresas & Serviços
+                Diretório de Negócios & Serviços
               </h1>
               <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
                 Encontre comércios locais, restaurantes, clínicas e prestadores de serviço com contato direto via WhatsApp e avaliação verificada.
@@ -1061,7 +1064,7 @@ export function BusinessDirectoryPage({
                 </span>
               </div>
               <div className="text-xl font-black text-white">
-                {filteredResults.length} empresas encontradas
+                {filteredResults.length} negócios encontrados
               </div>
               <div className="text-[10px] text-slate-400">
                 {isAjaxLoading ? 'Processando requisição assíncrona...' : `Consulta #${ajaxQueryCount} realizada com sucesso`}
@@ -1270,8 +1273,12 @@ export function BusinessDirectoryPage({
         </div>
       </section>
 
-      {/* Main Content Area: Sidebar Filters & Results Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      {/* Main Content Area: Contributor Summary + Sidebar Filters & Results Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+        {onOpenContributorProfile && (
+          <ContributorSummaryStrip onOpenProfileModal={onOpenContributorProfile} />
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* ================= LEFT SIDEBAR FILTERS (AJAX CONTROLS) ================= */}
@@ -1719,7 +1726,7 @@ export function BusinessDirectoryPage({
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
                   <span className="text-xs font-bold text-slate-500">
-                    Exibindo <strong className="text-slate-900">{filteredResults.length}</strong> de {DIRECTORY_MOCK_DATA.length} empresas (Raio: <strong>até {maxRadiusKm} km</strong> de {userCoords.label.split(',')[0]})
+                    Exibindo <strong className="text-slate-900">{filteredResults.length}</strong> de {DIRECTORY_MOCK_DATA.length} negócios (Raio: <strong>até {maxRadiusKm} km</strong> de {userCoords.label.split(',')[0]})
                   </span>
                   {isAjaxLoading && (
                     <span className="text-xs text-[#FE3A18] font-bold flex items-center gap-1.5 animate-pulse">

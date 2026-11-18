@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   X,
   User,
@@ -20,6 +20,7 @@ import {
   getOwnerEmailPreferences,
   saveOwnerEmailPreferences,
 } from '../../services/notificationService';
+import { SmartCategorySuggestion } from './SmartCategorySuggestion';
 
 export interface RegisteredBusinessProfile {
   ownerName: string;
@@ -91,6 +92,9 @@ export const RegisterBusinessModal: React.FC<RegisterBusinessModalProps> = ({
   const [whatsapp, setWhatsapp] = useState('');
   const [openingHours, setOpeningHours] = useState('Seg a Sex: 08h às 18h | Sáb: 09h às 13h');
   const [description, setDescription] = useState('');
+  const [categoryLockedManually, setCategoryLockedManually] = useState(false);
+  const [categorySuggestedByAi, setCategorySuggestedByAi] = useState(false);
+  const [autoCategorizeSignal, setAutoCategorizeSignal] = useState(0);
   const [step2Error, setStep2Error] = useState('');
   const [savedProfile, setSavedProfile] = useState<RegisteredBusinessProfile | null>(null);
 
@@ -99,8 +103,22 @@ export const RegisterBusinessModal: React.FC<RegisterBusinessModalProps> = ({
       setStep('entry');
       setStep1Error('');
       setStep2Error('');
+      setCategoryLockedManually(false);
+      setCategorySuggestedByAi(false);
+      setAutoCategorizeSignal(0);
     }
   }, [isOpen]);
+
+  const handleApplySuggestedCategory = useCallback(
+    (suggestedCat: string, source: 'auto' | 'manual_pick') => {
+      setCategory(suggestedCat);
+      setCategorySuggestedByAi(true);
+      if (source === 'manual_pick') {
+        setCategoryLockedManually(true);
+      }
+    },
+    []
+  );
 
   if (!isOpen) return null;
 
@@ -413,15 +431,56 @@ export const RegisterBusinessModal: React.FC<RegisterBusinessModalProps> = ({
                   </div>
                 </div>
 
-                <div>
+                <div className="sm:col-span-2">
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Categoria Principal *
+                    Descrição dos Serviços / Diferenciais do Negócio
                   </label>
+                  <textarea
+                    rows={3}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    onBlur={() => {
+                      if (description.trim().length >= 20) {
+                        setAutoCategorizeSignal((prev) => prev + 1);
+                      }
+                    }}
+                    placeholder="Ex: Oficina mecânica especializada em injeção eletrônica, alinhamento 3D e troca de óleo no Campolim..."
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-medium text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none resize-none"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <SmartCategorySuggestion
+                    businessName={businessName}
+                    description={description}
+                    categories={CATEGORIES}
+                    selectedCategory={category}
+                    isCategoryLockedManually={categoryLockedManually}
+                    autoTriggerSignal={autoCategorizeSignal}
+                    onApplyCategory={handleApplySuggestedCategory}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Categoria Principal *
+                    </label>
+                    {categorySuggestedByAi && (
+                      <span className="text-[11px] font-bold text-emerald-700">
+                        Definida por IA
+                      </span>
+                    )}
+                  </div>
                   <div className="relative">
                     <Briefcase className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <select
                       value={category}
-                      onChange={(e) => setCategory(e.target.value)}
+                      onChange={(e) => {
+                        setCategory(e.target.value);
+                        setCategoryLockedManually(true);
+                        setCategorySuggestedByAi(false);
+                      }}
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 text-slate-900 font-medium text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none bg-white"
                     >
                       {CATEGORIES.map((cat) => (
@@ -513,19 +572,6 @@ export const RegisterBusinessModal: React.FC<RegisterBusinessModalProps> = ({
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-medium text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
                     />
                   </div>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Resumo dos Serviços / Diferenciais da Empresa
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Conte brevemente o que sua empresa oferece, principais serviços e diferenciais para os clientes..."
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-medium text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none resize-none"
-                  />
                 </div>
               </div>
 

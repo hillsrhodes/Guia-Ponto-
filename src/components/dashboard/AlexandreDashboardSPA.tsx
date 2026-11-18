@@ -81,6 +81,7 @@ import {
   dispatchOwnerLeadEmailNotification
 } from './MerchantEmailNotificationHub';
 import { WhatsAppConversionChartsPanel } from './WhatsAppConversionChartsPanel';
+import { BusinessAnalyticsDashboard } from './BusinessAnalyticsDashboard';
 
 export interface CalendarSlotSchedule {
   id: string;
@@ -778,7 +779,7 @@ Retorne APENAS um JSON válido com as chaves:
 }
 
 export function AlexandreDashboardSPA({ onBackToHome, onOpenAdminPanel }: AlexandreDashboardSPAProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'ads' | 'aiStudio' | 'leads' | 'reviews' | 'reports' | 'billing' | 'gamification' | 'settings' | 'accountSettings' | 'aiSuggestions' | 'partners' | 'seoOptimizer'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'ads' | 'aiStudio' | 'leads' | 'reviews' | 'reports' | 'billing' | 'gamification' | 'settings' | 'accountSettings' | 'aiSuggestions' | 'partners' | 'seoOptimizer'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Todos');
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -2015,6 +2016,16 @@ export function AlexandreDashboardSPA({ onBackToHome, onOpenAdminPanel }: Alexan
               </button>
 
               <button
+                onClick={() => setActiveTab('analytics')}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
+                  activeTab === 'analytics' ? 'bg-[#FE3A18] text-white shadow-lg shadow-[#FE3A18]/25' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <TrendingUp className="w-5 h-5" />
+                <span>Dashboard de Analytics</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab('ads')}
                 className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all cursor-pointer ${
                   activeTab === 'ads' ? 'bg-[#FE3A18] text-white shadow-lg shadow-[#FE3A18]/25' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
@@ -2219,6 +2230,7 @@ export function AlexandreDashboardSPA({ onBackToHome, onOpenAdminPanel }: Alexan
                 <div className="space-y-1.5 pt-2 max-h-[70vh] overflow-y-auto">
                   {[
                     { id: 'overview', label: 'Visão Geral & Gráficos', icon: LayoutDashboard },
+                    { id: 'analytics', label: 'Dashboard de Analytics', icon: TrendingUp },
                     { id: 'ads', label: 'Meus Anúncios', icon: Megaphone },
                     { id: 'aiStudio', label: 'Criador & Editor IA Studio', icon: Sparkles },
                     { id: 'gamification', label: 'Reputação & Conquistas', icon: Award },
@@ -2252,6 +2264,7 @@ export function AlexandreDashboardSPA({ onBackToHome, onOpenAdminPanel }: Alexan
             <div>
               <h1 className={`text-xl sm:text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                 {activeTab === 'overview' && 'Escritório Virtual • Visão Geral'}
+                {activeTab === 'analytics' && 'Dashboard de Analytics • Vitrine & WhatsApp'}
                 {activeTab === 'ads' && 'Gerenciamento de Anúncios'}
                 {activeTab === 'aiStudio' && (editingAdId ? 'Editor de Anúncios com IA' : 'Criador de Anúncios com IA')}
                 {activeTab === 'gamification' && 'Reputação e Conquistas do Lojista'}
@@ -2345,6 +2358,14 @@ export function AlexandreDashboardSPA({ onBackToHome, onOpenAdminPanel }: Alexan
         {/* Dynamic Body Content */}
         <div className="p-6 sm:p-10 space-y-8 max-w-7xl mx-auto w-full">
           
+          {/* ================= 0. DASHBOARD DE ANALYTICS (RECHARTS) ================= */}
+          {activeTab === 'analytics' && (
+            <BusinessAnalyticsDashboard
+              businessName={accountSettingsData.businessName}
+              isDarkMode={isDarkMode}
+            />
+          )}
+
           {/* ================= 1. VISÃO GERAL & GRÁFICOS ================= */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
@@ -5387,7 +5408,7 @@ export function AlexandreDashboardSPA({ onBackToHome, onOpenAdminPanel }: Alexan
                         </div>
                         <div className="flex flex-col">
                           <span className="font-medium text-xs leading-none text-[#202124]">GuiaPonto Brasil</span>
-                          <span className="text-[11px] text-[#4d5156] leading-none mt-0.5">https://www.guiaponto.com.br › empresas › destaque</span>
+                          <span className="text-[11px] text-[#4d5156] leading-none mt-0.5">https://www.guiaponto.com.br › negocios › destaque</span>
                         </div>
                       </div>
 

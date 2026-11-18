@@ -199,7 +199,7 @@ export function ReferLocalBusinessProgram({
     setTimeout(() => setCopiedLink(false), 3000);
   };
 
-  const whatsappInviteMessage = `Olá! Aqui é ${referrerOwnerName} da ${referrerBusinessName}. Estou convidando empresas parceiras de ${selectedZone} e Sorocaba para o diretório GuiaPonto! Cadastre sua empresa pelo meu link exclusivo para nós dois ganharmos +500 XP de impulso e a insígnia 3D "Local Connector" na vitrine pública: ${uniqueReferralUrl}`;
+  const whatsappInviteMessage = `Olá! Aqui é ${referrerOwnerName} da ${referrerBusinessName}. Estou convidando negócios parceiros de ${selectedZone} e Sorocaba para o diretório GuiaPonto! Cadastre sua empresa pelo meu link exclusivo para nós dois ganharmos +500 XP de impulso e a insígnia 3D "Local Connector" na vitrine pública: ${uniqueReferralUrl}`;
 
   const handleCopyWhatsappInvite = () => {
     navigator.clipboard.writeText(whatsappInviteMessage);
@@ -358,10 +358,10 @@ export function ReferLocalBusinessProgram({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
           <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-              Empresas Indicadas em Sorocaba
+              Negócios Indicados em Sorocaba
             </span>
             <div className="text-2xl font-black text-white font-mono tabular-nums mt-1">
-              {totalReferrals} empresas
+              {totalReferrals} negócios
             </div>
             <span className="text-[11px] text-teal-400 font-semibold mt-0.5 block">
               Rede B2B Verificada DDD (15)
@@ -591,7 +591,7 @@ export function ReferLocalBusinessProgram({
                 Registre uma empresa parceira usando o código{' '}
                 <span className="font-mono font-bold text-teal-300">{referralCode}</span> para creditar instantaneamente{' '}
                 <strong className="text-white">+500 XP</strong> e a conquista 3D{' '}
-                <strong className="text-teal-300">Local Connector</strong> para ambas as empresas.
+                <strong className="text-teal-300">Local Connector</strong> para ambos os negócios.
               </p>
 
               <form onSubmit={handleSimulateReferralRegistration} className="space-y-3.5">
@@ -698,11 +698,11 @@ export function ReferLocalBusinessProgram({
             <div className="flex items-center gap-2.5">
               <Users className="w-5 h-5 text-teal-400" />
               <h4 className="font-extrabold text-sm text-white">
-                Histórico de Empresas Conectadas por Você em Sorocaba ({referredList.length})
+                Histórico de Negócios Conectados por Você em Sorocaba ({referredList.length})
               </h4>
             </div>
             <span className="text-xs text-emerald-400 font-bold">
-              Todas as empresas abaixo receberam +500 XP + Insígnia "Local Connector"
+              Todos os negócios abaixo receberam +500 XP + Insígnia "Local Connector"
             </span>
           </div>
 

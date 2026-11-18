@@ -5,18 +5,19 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { X, Mail, Lock, ArrowRight, MapPin, ShieldCheck, Building2 } from 'lucide-react';
+import { X, Mail, Lock, ArrowRight, MapPin, ShieldCheck, Building2, Award } from 'lucide-react';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLoginAdmin?: () => void;
+  onLoginContributor?: () => void;
 }
 
-export function LoginModal({ isOpen, onClose, onLoginAdmin }: LoginModalProps) {
+export function LoginModal({ isOpen, onClose, onLoginAdmin, onLoginContributor }: LoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'merchant' | 'admin'>('merchant');
+  const [role, setRole] = useState<'merchant' | 'contributor' | 'admin'>('merchant');
   const [loggedIn, setLoggedIn] = useState(false);
 
   if (!isOpen) return null;
@@ -28,6 +29,8 @@ export function LoginModal({ isOpen, onClose, onLoginAdmin }: LoginModalProps) {
       setLoggedIn(false);
       if (role === 'admin' && onLoginAdmin) {
         onLoginAdmin();
+      } else if (role === 'contributor' && onLoginContributor) {
+        onLoginContributor();
       } else {
         onClose();
       }
@@ -68,36 +71,52 @@ export function LoginModal({ isOpen, onClose, onLoginAdmin }: LoginModalProps) {
               </div>
               <h4 className="text-xl font-bold text-slate-900">Login realizado com sucesso!</h4>
               <p className="text-sm text-slate-500">
-                {role === 'admin' ? 'Carregando Console Admin Master...' : 'Carregando Painel Executivo do Lojista...'}
+                {role === 'admin'
+                  ? 'Carregando Console Admin Master...'
+                  : role === 'contributor'
+                  ? 'Abrindo Perfil Contribuidor GuiaPonto (Badges & Níveis)...'
+                  : 'Carregando Painel Executivo do Lojista...'}
               </p>
             </div>
           ) : (
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Role Switcher */}
-              <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-100 border border-slate-200">
+              <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-100 border border-slate-200">
                 <button
                   type="button"
                   onClick={() => setRole('merchant')}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-2.5 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     role === 'merchant'
                       ? 'bg-white text-[#FE3A18] shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>Painel Lojista</span>
+                  <Building2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Negócios</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('contributor')}
+                  className={`py-2.5 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                    role === 'contributor'
+                      ? 'bg-white text-emerald-700 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Award className="w-3.5 h-3.5 shrink-0" />
+                  <span>Contribuidor</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setRole('admin')}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`py-2.5 px-2 rounded-xl text-xs font-black flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     role === 'admin'
                       ? 'bg-indigo-950 text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Painel Admin</span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Admin</span>
                 </button>
               </div>
 
@@ -143,7 +162,13 @@ export function LoginModal({ isOpen, onClose, onLoginAdmin }: LoginModalProps) {
                     : 'bg-[#FE3A18] hover:bg-[#e33315] shadow-[#FE3A18]/25'
                 }`}
               >
-                <span>{role === 'admin' ? 'Entrar no Painel Admin Master' : 'Entrar no Painel do Lojista'}</span>
+                <span>
+                  {role === 'admin'
+                    ? 'Entrar no Painel Admin Master'
+                    : role === 'contributor'
+                    ? 'Acessar Perfil de Contribuidor'
+                    : 'Entrar no Painel de Negócios'}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>

@@ -57,7 +57,7 @@ export function Navbar({ onOpenRegisterModal, onOpenLoginModal, onOpenExecutiveD
               }`}
             >
               <Building2 className="w-3.5 h-3.5" />
-              <span>Para Empresas</span>
+              <span>Para Negócios</span>
             </button>
             <button
               onClick={() => setActiveTab('consumer')}
@@ -68,7 +68,7 @@ export function Navbar({ onOpenRegisterModal, onOpenLoginModal, onOpenExecutiveD
               }`}
             >
               <Search className="w-3.5 h-3.5" />
-              <span>Para Consumidores</span>
+              <span>Para Pessoas</span>
             </button>
           </div>
         </div>
@@ -81,10 +81,7 @@ export function Navbar({ onOpenRegisterModal, onOpenLoginModal, onOpenExecutiveD
               className="px-4 py-2.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-extrabold text-xs shadow-xs transition-all flex items-center gap-2 cursor-pointer hover:border-[#FE3A18]/40 group"
             >
               <Building2 className="w-4 h-4 text-[#FE3A18]" />
-              <span>Diretório de Empresas</span>
-              <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-black border border-emerald-200">
-                AJAX
-              </span>
+              <span>Vitrine de Negócios</span>
             </button>
           )}
 
@@ -141,7 +138,7 @@ export function Navbar({ onOpenRegisterModal, onOpenLoginModal, onOpenExecutiveD
                 activeTab === 'business' ? 'bg-white text-[#FE3A18] shadow-sm' : 'text-slate-600'
               }`}
             >
-              Para Empresas
+              Para Negócios
             </button>
             <button
               onClick={() => { setActiveTab('consumer'); setMobileMenuOpen(false); }}
@@ -149,7 +146,7 @@ export function Navbar({ onOpenRegisterModal, onOpenLoginModal, onOpenExecutiveD
                 activeTab === 'consumer' ? 'bg-white text-[#FE3A18] shadow-sm' : 'text-slate-600'
               }`}
             >
-              Para Consumidores
+              Para Pessoas
             </button>
           </div>
 
@@ -160,7 +157,7 @@ export function Navbar({ onOpenRegisterModal, onOpenLoginModal, onOpenExecutiveD
                 className="w-full py-3.5 px-4 rounded-2xl bg-white border-2 border-slate-200 text-slate-900 font-extrabold text-sm flex items-center justify-center gap-2 shadow-xs hover:border-[#FE3A18]/40"
               >
                 <Building2 className="w-4 h-4 text-[#FE3A18]" />
-                <span>Diretório de Empresas (Filtro AJAX)</span>
+                <span>Diretório de Negócios (Filtro AJAX)</span>
               </button>
             )}
 

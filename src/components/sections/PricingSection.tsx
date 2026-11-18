@@ -265,7 +265,7 @@ export function PricingSection({ onSelectPlan }: PricingSectionProps) {
               </div>
 
               <div>
-                <h3 className="text-2xl font-black text-white">Plano Premium Pro</h3>
+                <h3 className="text-2xl font-black text-white">Plano Pro</h3>
                 <p className="text-sm text-slate-300 mt-1">
                   Acelerador completo com Inteligência Artificial e prioridade máxima nas buscas locais.
                 </p>

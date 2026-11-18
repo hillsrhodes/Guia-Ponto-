@@ -27,12 +27,14 @@ import {
   DIRECTORY_MOCK_DATA,
   DirectoryBusiness
 } from '../directory/BusinessDirectoryPage';
+import { ContributorSummaryStrip } from '../contributor/ContributorSummaryStrip';
 
 interface HeroSearchProps {
   onOpenRegisterModal: () => void;
   onOpenDirectory?: (searchTerm?: string, cityTerm?: string) => void;
   onSelectCategory?: (categoryName: string) => void;
   onSelectBusiness?: (business: DirectoryBusiness) => void;
+  onOpenContributorProfile?: () => void;
   activeTab: 'business' | 'consumer';
 }
 
@@ -207,6 +209,7 @@ export function HeroSearch({
   onOpenDirectory,
   onSelectCategory,
   onSelectBusiness,
+  onOpenContributorProfile,
   activeTab
 }: HeroSearchProps) {
   const { activeHub, isLocating, refreshGpsWithSorocabaLock } =
@@ -460,26 +463,8 @@ export function HeroSearch({
     <section className="relative pt-12 pb-24 lg:pt-20 lg:pb-32 overflow-x-clip">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
         <div className="text-center max-w-4xl mx-auto space-y-8">
-          {/* Badge & Floating Hero Robot Mascot */}
+          {/* Badge */}
           <div className="flex flex-col items-center space-y-5">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: [0, -6, 0] }}
-              transition={{
-                opacity: { duration: 0.5 },
-                scale: { duration: 0.5 },
-                y: { duration: 3.6, repeat: Infinity, ease: 'easeInOut' }
-              }}
-              className="relative flex items-center justify-center"
-            >
-              <div className="absolute inset-0 bg-[#FE3A18]/20 rounded-full blur-2xl scale-110 pointer-events-none" />
-              <img
-                src="https://www.guiaponto.com.br/guia/wp-content/themes/guiaponto-guia/assets/img/heroi-robo-320.webp"
-                alt="Mascote Herói GuiaPonto Sorocaba"
-                referrerPolicy="no-referrer"
-                className="w-28 h-28 sm:w-36 sm:h-36 object-contain drop-shadow-2xl relative z-10 select-none"
-              />
-            </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -503,9 +488,9 @@ export function HeroSearch({
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 leading-[1.1]"
           >
-            Sua empresa <br className="hidden sm:inline" />
+            Seu Negócio <br className="hidden sm:inline" />
             <span className="bg-gradient-to-r from-[#FE3A18] via-rose-500 to-orange-500 bg-clip-text text-transparent">
-              merece ser encontrada.
+              merece ser encontrado
             </span>
           </motion.h1>
 
@@ -570,7 +555,7 @@ export function HeroSearch({
                     placeholder={
                       isListening
                         ? 'Ouvindo... Fale agora'
-                        : 'Busque categorias ou empresas (Ex: Restaurante, Sabor...)'
+                        : 'Busque categorias ou negócios (Ex: Restaurante, Sabor...)'
                     }
                     value={searchTerm}
                     onFocus={() => setIsDropdownOpen(true)}
@@ -696,7 +681,7 @@ export function HeroSearch({
                                     <div className="flex items-center gap-2 shrink-0">
                                       <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-[10px] font-bold">
                                         {cat.count}{' '}
-                                        {cat.count === 1 ? 'empresa' : 'empresas'}
+                                        {cat.count === 1 ? 'negócio' : 'negócios'}
                                       </span>
                                       <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
                                     </div>
@@ -713,7 +698,7 @@ export function HeroSearch({
                             <div className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-between">
                               <span className="flex items-center gap-1.5">
                                 <Building2 className="w-3 h-3 text-emerald-600" />
-                                Empresas de Sorocaba & Região
+                                Negócios de Sorocaba & Região
                               </span>
                               <span>{matchedBusinesses.length} sugestões</span>
                             </div>
@@ -835,7 +820,7 @@ export function HeroSearch({
                             <span>
                               {searchTerm.trim()
                                 ? `Ver todos os resultados para "${searchTerm.trim()}" no Diretório`
-                                : 'Explorar todas as categorias e empresas no Diretório'}
+                                : 'Explorar todas as categorias e negócios no Diretório'}
                             </span>
                             <ArrowRight className="w-3.5 h-3.5" />
                           </button>
@@ -923,7 +908,7 @@ export function HeroSearch({
                 >
                   <Building2 className="w-3.5 h-3.5 text-[#FE3A18]" />
                   <span>
-                    Explorar todas as empresas cadastradas no{' '}
+                    Explorar todos os negócios cadastrados no{' '}
                     <strong>Diretório com Filtro AJAX</strong>
                   </span>
                   <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black">
@@ -935,8 +920,8 @@ export function HeroSearch({
             )}
           </motion.div>
 
-          {/* Primary CTA if in Business Mode */}
-          {activeTab === 'business' && (
+          {/* Primary CTA if in Business Mode, or Contribuidor Profile Bar in Consumer Mode */}
+          {activeTab === 'business' ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -957,6 +942,15 @@ export function HeroSearch({
                 </strong>
               </span>
             </motion.div>
+          ) : (
+            onOpenContributorProfile && (
+              <div className="pt-2 max-w-4xl mx-auto">
+                <ContributorSummaryStrip
+                  onOpenProfileModal={onOpenContributorProfile}
+                  onExploreBusinesses={() => onOpenDirectory?.('', cityTerm)}
+                />
+              </div>
+            )
           )}
         </div>
       </div>

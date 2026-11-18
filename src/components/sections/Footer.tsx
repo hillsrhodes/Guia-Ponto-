@@ -175,14 +175,15 @@ export function Footer({ onOpenDirectory, onOpenLegalModal, onOpenAdminPanel }: 
                     onClick={onOpenDirectory}
                     className="text-[#FE3A18] hover:text-white font-bold transition-colors cursor-pointer flex items-center gap-1.5"
                   >
-                    <span>Diretório de Empresas (AJAX)</span>
+                    <span>Diretório de Negócios (AJAX)</span>
                   </button>
                 </li>
               )}
               <li><a href="#categorias" className="hover:text-white transition-colors">Categorias</a></li>
               <li><a href="#como-funciona" className="hover:text-white transition-colors">Como Funciona</a></li>
-              <li><a href="#destaques" className="hover:text-white transition-colors">Empresas Destaque</a></li>
+              <li><a href="#destaques" className="hover:text-white transition-colors">Negócios Destaque</a></li>
               <li><a href="#planos" className="hover:text-white transition-colors">Planos & Preços</a></li>
+              <li><a href="#business-insights" className="hover:text-white transition-colors">Business Insights</a></li>
               <li><a href="#faq" className="hover:text-white transition-colors">Dúvidas Frequentes</a></li>
               {onOpenAdminPanel && (
                 <li className="pt-1">

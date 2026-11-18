@@ -149,7 +149,7 @@ export function CategoryBentoGrid({ onSelectCategory }: CategoryBentoGridProps) 
             Explore Categorias em Sorocaba e Região
           </h2>
           <p className="text-base sm:text-lg text-slate-600">
-            Nossa busca prioriza automaticamente empresas locais verificadas em <strong className="text-slate-900">Sorocaba, Votorantim e Região Metropolitana</strong>, garantindo atendimento rápido pelo WhatsApp.
+            Nossa busca prioriza automaticamente negócios locais verificados em <strong className="text-slate-900">Sorocaba, Votorantim e Região Metropolitana</strong>, garantindo atendimento rápido pelo WhatsApp.
           </p>
         </div>
 
@@ -169,7 +169,7 @@ export function CategoryBentoGrid({ onSelectCategory }: CategoryBentoGridProps) 
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Selecione a distância máxima para filtrar empresas cadastradas ao clicar em qualquer categoria abaixo:
+                Selecione a distância máxima para filtrar negócios cadastrados ao clicar em qualquer categoria abaixo:
               </p>
             </div>
           </div>
@@ -207,7 +207,7 @@ export function CategoryBentoGrid({ onSelectCategory }: CategoryBentoGridProps) 
                   ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
                   : 'bg-slate-50 border-slate-200 text-slate-500'
               }`}
-              title="Priorizar empresas com selo Verificado Sorocaba"
+              title="Priorizar negócios com selo Verificado Sorocaba"
             >
               <ShieldCheck className={`w-4 h-4 ${onlyVerifiedSorocaba ? 'text-emerald-600' : 'text-slate-400'}`} />
               <span>Priorizar Verificado Sorocaba</span>

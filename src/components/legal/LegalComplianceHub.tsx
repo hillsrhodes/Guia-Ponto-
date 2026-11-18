@@ -169,7 +169,7 @@ export function CookieConsentBanner({ onOpenLegalModal }: CookieConsentBannerPro
                     </span>
                   </div>
                   <p className="text-xs text-slate-600">
-                    Usamos cookies essenciais e de geolocalização local para exibir empresas próximas em Sorocaba. Consulte nossa{' '}
+                    Usamos cookies essenciais e de geolocalização local para exibir negócios próximos em Sorocaba. Consulte nossa{' '}
                     <button
                       type="button"
                       onClick={() => onOpenLegalModal('cookies')}
@@ -514,7 +514,7 @@ export function LegalCenterModal({ activeTab, onClose, onChangeTab }: LegalCente
                       Política de Privacidade e Tratamento de Dados (LGPD)
                     </h3>
                     <p className="text-xs text-slate-300 max-w-2xl">
-                      Este documento detalha como o GuiaPonto coleta, utiliza, armazena e protege os dados pessoais de consumidores visitantes e empresas anunciantes na Região Metropolitana de Sorocaba.
+                      Este documento detalha como o GuiaPonto coleta, utiliza, armazena e protege os dados pessoais de consumidores visitantes e negócios anunciantes na Região Metropolitana de Sorocaba.
                     </p>
                   </div>
                   <div className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-xs shrink-0">
@@ -531,7 +531,7 @@ export function LegalCenterModal({ activeTab, onClose, onChangeTab }: LegalCente
                     </div>
                     <h4 className="text-sm font-black text-slate-900">1. Geolocalização Local Segura</h4>
                     <p className="text-xs text-slate-600">
-                      Quando você utiliza o seletor "Perto de Mim em Sorocaba", sua coordenada GPS é processada localmente no navegador via fórmula de Haversine para calcular a distância em KM até as empresas, sem histórico de deslocamento contínuo.
+                      Quando você utiliza o seletor "Perto de Mim em Sorocaba", sua coordenada GPS é processada localmente no navegador via fórmula de Haversine para calcular a distância em KM até os negócios, sem histórico de deslocamento contínuo.
                     </p>
                   </div>
 
@@ -566,7 +566,7 @@ export function LegalCenterModal({ activeTab, onClose, onChangeTab }: LegalCente
                         <strong className="text-slate-900">Visitantes e Consumidores:</strong> Coletamos termos de busca, bairro/cidade de preferência em Sorocaba e região (ex.: Campolim, Centro, Votorantim, Itu) e, mediante sua ação voluntária em formulários de orçamento ou resgate de cupons, nome, telefone/WhatsApp e e-mail (Base Legal: <em>Consentimento</em> e <em>Procedimentos Preliminares a Contrato</em>).
                       </li>
                       <li>
-                        <strong className="text-slate-900">Empresas Anunciantes (Parceiros GuiaPonto):</strong> Coletamos Razão Social/Nome Fantasia, CNPJ, endereço comercial em Sorocaba e região, telefone, fotos da galeria, vídeos e métricas de desempenho dos anúncios para verificação do selo <em>"Verificado Sorocaba"</em> e execução do contrato de publicidade digital.
+                        <strong className="text-slate-900">Negócios Anunciantes (Parceiros GuiaPonto):</strong> Coletamos Razão Social/Nome Fantasia, CNPJ, endereço comercial em Sorocaba e região, telefone, fotos da galeria, vídeos e métricas de desempenho dos anúncios para verificação do selo <em>"Verificado Sorocaba"</em> e execução do contrato de publicidade digital.
                       </li>
                     </ul>
                   </section>
@@ -576,7 +576,7 @@ export function LegalCenterModal({ activeTab, onClose, onChangeTab }: LegalCente
                       2. Compartilhamento e Retenção de Dados
                     </h4>
                     <p className="text-slate-600">
-                      O GuiaPonto <strong>jamais comercializa listas de dados pessoais</strong>. Os leads gerados nas páginas individuais (Landing Pages) das empresas são disponibilizados unicamente ao respectivo estabelecimento anunciante. Dados analíticos são mantidos de forma agregada e anonimizada pelo período necessário ao cumprimento de obrigações legais (Art. 15 do Marco Civil da Internet — 6 meses para registros de aplicação).
+                      O GuiaPonto <strong>jamais comercializa listas de dados pessoais</strong>. Os leads gerados nas páginas individuais (Landing Pages) dos negócios são disponibilizados unicamente ao respectivo estabelecimento anunciante. Dados analíticos são mantidos de forma agregada e anonimizada pelo período necessário ao cumprimento de obrigações legais (Art. 15 do Marco Civil da Internet — 6 meses para registros de aplicação).
                     </p>
                   </section>
 
@@ -682,7 +682,7 @@ export function LegalCenterModal({ activeTab, onClose, onChangeTab }: LegalCente
                       Termos e Condições Gerais de Uso do GuiaPonto
                     </h3>
                     <p className="text-xs text-slate-300 max-w-2xl">
-                      Ao navegar no diretório, escanear QR Codes de empresas parceiras ou contratar planos de destaque publicitário em Sorocaba e região, você concorda com as disposições abaixo.
+                      Ao navegar no diretório, escanear QR Codes de negócios parceiros ou contratar planos de destaque publicitário em Sorocaba e região, você concorda com as disposições abaixo.
                     </p>
                   </div>
                   <div className="flex items-center gap-2 bg-white/10 px-4 py-2.5 rounded-xl text-xs font-bold text-emerald-300 shrink-0">
@@ -698,17 +698,17 @@ export function LegalCenterModal({ activeTab, onClose, onChangeTab }: LegalCente
                       <span>1. Objeto da Plataforma e Diretório Regional</span>
                     </h4>
                     <p className="text-slate-600">
-                      O <strong>GuiaPonto</strong> é uma plataforma de tecnologia publicitária, diretório comercial interativo com busca AJAX e gerador de Landing Pages corporativas voltado prioritariamente a empresas estabelecidas em <strong>Sorocaba e Região Metropolitana (Votorantim, Itu, Salto, Araçoiaba da Serra, Boituva e Porto Feliz)</strong>. O GuiaPonto atua como vitrine tecnológica e ponte de contato via WhatsApp, não participando como intermediário financeiro nas transações comerciais entre consumidores e estabelecimentos.
+                      O <strong>GuiaPonto</strong> é uma plataforma de tecnologia publicitária, diretório comercial interativo com busca AJAX e gerador de Landing Pages corporativas voltado prioritariamente a negócios estabelecidos em <strong>Sorocaba e Região Metropolitana (Votorantim, Itu, Salto, Araçoiaba da Serra, Boituva e Porto Feliz)</strong>. O GuiaPonto atua como vitrine tecnológica e ponte de contato via WhatsApp, não participando como intermediário financeiro nas transações comerciais entre consumidores e estabelecimentos.
                     </p>
                   </div>
 
                   <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                     <h4 className="text-base font-black text-slate-900 flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      <span>2. Cadastro de Empresas e Selo "Verificado Sorocaba"</span>
+                      <span>2. Cadastro de Negócios e Selo "Verificado Sorocaba"</span>
                     </h4>
                     <p className="text-slate-600">
-                      As empresas anunciantes são integralmente responsáveis pela veracidade das informações cadastradas (CNPJ, endereço físico, horário de funcionamento, galeria de fotos, serviços, preços e cupons promocionais). O selo <strong>"Verificado Sorocaba"</strong> atesta que a empresa possui presença local ativa na região de Sorocaba e dados cadastrais validados pela equipe GuiaPonto.
+                      Os negócios anunciantes são integralmente responsáveis pela veracidade das informações cadastradas (CNPJ, endereço físico, horário de funcionamento, galeria de fotos, serviços, preços e cupons promocionais). O selo <strong>"Verificado Sorocaba"</strong> atesta que a empresa possui presença local ativa na região de Sorocaba e dados cadastrais validados pela equipe GuiaPonto.
                     </p>
                   </div>
 
@@ -735,7 +735,7 @@ export function LegalCenterModal({ activeTab, onClose, onChangeTab }: LegalCente
                       4. Propriedade Intelectual e Limitação de Responsabilidade
                     </h4>
                     <p className="text-slate-600">
-                      A marca GuiaPonto, o layout do sistema, os algoritmos de ranqueamento por proximidade e o código-fonte são protegidos pela legislação brasileira de Propriedade Intelectual. Eventuais vícios na prestação de serviços ou produtos adquiridos diretamente junto às empresas anunciantes devem ser tratados diretamente com o respectivo estabelecimento fornecedor, nos termos do Código de Defesa do Consumidor.
+                      A marca GuiaPonto, o layout do sistema, os algoritmos de ranqueamento por proximidade e o código-fonte são protegidos pela legislação brasileira de Propriedade Intelectual. Eventuais vícios na prestação de serviços ou produtos adquiridos diretamente junto aos negócios anunciantes devem ser tratados diretamente com o respectivo estabelecimento fornecedor, nos termos do Código de Defesa do Consumidor.
                     </p>
                   </div>
                 </div>
@@ -781,7 +781,7 @@ export function LegalCenterModal({ activeTab, onClose, onChangeTab }: LegalCente
                         </span>
                       </div>
                       <p className="text-xs text-slate-600">
-                        Indispensáveis para o funcionamento do site, autenticação segura do painel executivo, navegação entre páginas das empresas e armazenamento da sua escolha de privacidade LGPD.
+                        Indispensáveis para o funcionamento do site, autenticação segura do painel executivo, navegação entre páginas dos negócios e armazenamento da sua escolha de privacidade LGPD.
                       </p>
                     </div>
                     <div className="text-[11px] text-slate-500 font-semibold border-t border-slate-200 pt-2.5">
@@ -814,7 +814,7 @@ export function LegalCenterModal({ activeTab, onClose, onChangeTab }: LegalCente
                         </button>
                       </div>
                       <p className="text-xs text-slate-600">
-                        Permitem memorizar a localização selecionada em Sorocaba e arredores (ex.: Campolim, Centro, Votorantim) e o raio de alcance (5km a 50km) para exibir empresas próximas sem precisar reconfigurar a cada visita.
+                        Permitem memorizar a localização selecionada em Sorocaba e arredores (ex.: Campolim, Centro, Votorantim) e o raio de alcance (5km a 50km) para exibir negócios próximos sem precisar reconfigurar a cada visita.
                       </p>
                     </div>
                     <div className="text-[11px] text-slate-500 font-semibold border-t border-slate-100 pt-2.5">
@@ -880,7 +880,7 @@ export function LegalCenterModal({ activeTab, onClose, onChangeTab }: LegalCente
                         </button>
                       </div>
                       <p className="text-xs text-slate-600">
-                        Identificam acessos originados por QR Codes físicos nos estabelecimentos de Sorocaba (<code>?empresa=</code>) e habilitam cupons promocionais exclusivos nas Landing Pages das empresas.
+                        Identificam acessos originados por QR Codes físicos nos estabelecimentos de Sorocaba (<code>?empresa=</code>) e habilitam cupons promocionais exclusivos nas Landing Pages dos negócios.
                       </p>
                     </div>
                     <div className="text-[11px] text-slate-500 font-semibold border-t border-slate-100 pt-2.5">

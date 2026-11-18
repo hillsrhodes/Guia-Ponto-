@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { Sparkles, MessageSquare, QrCode, Copy, CheckCircle2, ArrowUpRight, RefreshCw, Layers, ShieldCheck, Share2, LogOut, BarChart2 } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { WhatsAppConversionChartsPanel } from './WhatsAppConversionChartsPanel';
+import { BusinessAnalyticsDashboard } from './BusinessAnalyticsDashboard';
 
 interface UserDashboardProps {
   isOpen: boolean;
@@ -187,7 +188,7 @@ export function UserDashboard({ isOpen, onClose, publishedAd }: UserDashboardPro
           {/* TAB 2: PERFORMANCE ANALYTICS (RECHARTS) */}
           {activeTab === 'analytics' && (
             <div className="space-y-6">
-              <WhatsAppConversionChartsPanel
+              <BusinessAnalyticsDashboard
                 businessName={publishedAd?.title || 'Restaurante Sabor & Fogo'}
               />
             </div>

@@ -27,9 +27,9 @@ import {
   FreeVsProComparisonModal
 } from '../ui/FreePlanLockedBenefitsAndModal';
 import {
-  StripeCheckoutModal,
-  StripeGatewayStatusPanel
-} from '../ui/StripeCheckoutModal';
+  MercadoPagoCheckoutModal,
+  MercadoPagoGatewayStatusPanel
+} from '../ui/MercadoPagoCheckoutModal';
 
 export interface MonetizationFeatureRow {
   id: string;
@@ -152,7 +152,7 @@ export const MONETIZATION_FEATURE_MATRIX: MonetizationFeatureRow[] = [
     id: 'rep-3',
     category: 'Reputação, Gamificação & Insígnias 3D',
     feature: 'Multiplicador de XP no Ranking da Comunidade Sorocaba',
-    description: 'Suba de nível mais rápido no Leaderboard de empresas verificadas de Sorocaba.',
+    description: 'Suba de nível mais rápido no Leaderboard de negócios verificados de Sorocaba.',
     freeValue: 'Ganho de XP Padrão (1x)',
     premiumValue: 'Multiplicador Turbo 2x XP + Status GuiaPonto Pro Gold',
     enterpriseValue: 'Multiplicador 3x XP + Status GuiaPonto Pro Legend VIP',
@@ -243,17 +243,14 @@ export function MonetizationStrategyHub({
   const [activeStrategyTab, setActiveStrategyTab] = useState<'plans' | 'matrix' | 'playbook'>('plans');
   const [comparisonModalOpen, setComparisonModalOpen] = useState<boolean>(false);
   const [highlightedBenefitId, setHighlightedBenefitId] = useState<string | null>(null);
-  const [stripeModalOpen, setStripeModalOpen] = useState<boolean>(false);
-  const [stripePlanId, setStripePlanId] = useState<'premium' | 'enterprise'>('premium');
-  const [checkoutGateway, setCheckoutGateway] = useState<'mercadopago' | 'stripe'>('mercadopago');
+  const [mpModalOpen, setMpModalOpen] = useState<boolean>(false);
+  const [mpPlanId, setMpPlanId] = useState<'premium' | 'enterprise'>('premium');
 
-  const handleOpenStripeCheckout = (
-    targetPlan: 'premium' | 'enterprise',
-    provider: 'mercadopago' | 'stripe' = 'mercadopago'
+  const handleOpenMercadoPagoCheckout = (
+    targetPlan: 'premium' | 'enterprise'
   ) => {
-    setStripePlanId(targetPlan);
-    setCheckoutGateway(provider);
-    setStripeModalOpen(true);
+    setMpPlanId(targetPlan);
+    setMpModalOpen(true);
   };
 
   const handleOpenComparisonModal = (benefitId?: string) => {
@@ -655,18 +652,18 @@ export function MonetizationStrategyHub({
               <div className="space-y-2.5">
                 <button
                   type="button"
-                  onClick={() => handleOpenStripeCheckout('premium', 'mercadopago')}
+                  onClick={() => handleOpenMercadoPagoCheckout('premium')}
                   className="w-full py-4 px-5 rounded-2xl bg-[#FE3A18] hover:bg-[#e33315] text-white font-black text-xs sm:text-sm shadow-lg shadow-[#FE3A18]/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Crown className="w-4 h-4" />
                   <span>
                     {currentPlan === 'premium'
-                      ? 'Assinatura Premium Ativa (Mercado Pago / Stripe)'
-                      : 'Assinar via Mercado Pago ou Stripe (PIX & Cartão)'}
+                      ? 'Assinatura Premium Ativa (Mercado Pago)'
+                      : 'Assinar via Mercado Pago (PIX & Cartão)'}
                   </span>
                 </button>
                 <div className="text-center text-[11px] text-slate-400">
-                  Mercado Pago & Stripe Brasil · 7 dias grátis · Se paga na 1ª venda
+                  Mercado Pago Brasil · 7 dias grátis · Se paga na 1ª venda
                 </div>
               </div>
             </div>
@@ -745,7 +742,7 @@ export function MonetizationStrategyHub({
 
               <button
                 type="button"
-                onClick={() => handleOpenStripeCheckout('enterprise', 'mercadopago')}
+                onClick={() => handleOpenMercadoPagoCheckout('enterprise')}
                 className={`w-full py-3.5 px-4 rounded-2xl font-black text-xs transition-all cursor-pointer flex items-center justify-center gap-2 ${
                   currentPlan === 'enterprise'
                     ? 'bg-purple-700 text-white shadow-md'
@@ -756,16 +753,16 @@ export function MonetizationStrategyHub({
                 <span>
                   {currentPlan === 'enterprise'
                     ? 'Plano Enterprise VIP Ativo'
-                    : 'Assinar Enterprise (Mercado Pago / Stripe)'}
+                    : 'Assinar Enterprise (Mercado Pago)'}
                 </span>
               </button>
             </div>
           </div>
 
-          {/* Live Mercado Pago & Stripe Gateway Monitor Panel */}
-          <StripeGatewayStatusPanel
-            onOpenCheckout={(plan, provider) =>
-              handleOpenStripeCheckout(plan || 'premium', provider || 'mercadopago')
+          {/* Live Mercado Pago Gateway Monitor Panel */}
+          <MercadoPagoGatewayStatusPanel
+            onOpenCheckout={(plan) =>
+              handleOpenMercadoPagoCheckout(plan || 'premium')
             }
           />
 
@@ -1107,18 +1104,17 @@ export function MonetizationStrategyHub({
         onSelectProPlan={(selectedCycle) => {
           setBillingCycle(selectedCycle);
           setComparisonModalOpen(false);
-          handleOpenStripeCheckout('premium');
+          handleOpenMercadoPagoCheckout('premium');
         }}
         onContinueFreePlan={() => handleActivatePlan('gratuito')}
         initialHighlightedBenefitId={highlightedBenefitId}
       />
 
-      {/* Mercado Pago & Stripe Checkout Modal */}
-      <StripeCheckoutModal
-        isOpen={stripeModalOpen}
-        onClose={() => setStripeModalOpen(false)}
-        initialGateway={checkoutGateway}
-        initialPlanId={stripePlanId}
+      {/* Mercado Pago Checkout Modal */}
+      <MercadoPagoCheckoutModal
+        isOpen={mpModalOpen}
+        onClose={() => setMpModalOpen(false)}
+        initialPlanId={mpPlanId}
         initialBillingCycle={billingCycle}
         onSubscriptionCompleted={(tx) => {
           handleActivatePlan(tx.planId);

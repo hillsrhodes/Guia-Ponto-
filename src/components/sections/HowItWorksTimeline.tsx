@@ -113,7 +113,7 @@ export function HowItWorksTimeline({ onOpenRegisterModal }: HowItWorksTimelinePr
               É simples. É digital. É gratuito para começar.
             </span>
             <h3 className="text-2xl sm:text-3xl font-black">
-              Pronto para colocar sua empresa na vitrine digital?
+              Pronto para colocar seu negócio na vitrine digital?
             </h3>
             <p className="text-slate-300 text-sm sm:text-base max-w-2xl">
               Cadastre agora mesmo e comece a ser encontrado por potenciais clientes na sua região.
